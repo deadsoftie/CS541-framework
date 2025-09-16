@@ -1,0 +1,49 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Visual Studio specific files
+.vs/
+
+# Any docx files that are part of the coursework
+*.docx
+*.docs
+*.doc
+
+# Archives folder
+.Archives/
+
+# Misc. debug folders
+x64/
+Project[0-9]/
+Project[0-9][0-9]/
+Debug/
