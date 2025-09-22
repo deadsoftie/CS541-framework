@@ -33,18 +33,18 @@ glm::mat4 Rotate(const int i, const float theta)
 
     if (i == 0) {
         // Rotate around X
-        R[1][1] = cosAngle; R[1][2] = -sinAngle;
-        R[2][1] = sinAngle; R[2][2] = cosAngle;
+        R[1][1] = cosAngle; R[2][1] = -sinAngle;
+        R[1][2] = sinAngle; R[2][2] = cosAngle;
     }
     else if (i == 1) {
         // Rotate around Y
-        R[0][0] = cosAngle; R[0][2] = sinAngle;
-        R[2][0] = -sinAngle; R[2][2] = cosAngle;
+        R[0][0] = cosAngle; R[2][0] = sinAngle;
+        R[0][2] = -sinAngle; R[2][2] = cosAngle;
     }
     else if (i == 2) {
         // Rotate around Z
-        R[0][0] = cosAngle; R[0][1] = -sinAngle;
-        R[1][0] = sinAngle; R[1][1] = cosAngle;
+        R[0][0] = cosAngle; R[1][0] = -sinAngle;
+        R[0][1] = sinAngle; R[1][1] = cosAngle;
     }
 
     return R;
@@ -80,8 +80,8 @@ glm::mat4 Perspective(const float rx, const float ry,
 {
     glm::mat4 P(1.0);
 
-    P[0][0] = rx;
-    P[1][1] = ry;
+    P[0][0] = 1.0f/rx;
+    P[1][1] = 1.0f/ry;
     P[2][2] = -(back + front) / (back - front);
     P[2][3] = -1.0f;
     P[3][2] = -(2.0f * front * back) / (back - front);

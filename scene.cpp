@@ -138,10 +138,14 @@ void Scene::InitializeScene()
     ty = 0;
     zoom = 25;
 
-    ry = 0.4;
+    ry = 0.4f;
 
-    front = 0.5;
+    front = 0.5f;
     back = 5000;
+
+    // Game-like navigation
+    eye = {0, -20, 0};
+    speed = 10;
     
     // Set initial light parameters
     lightSpin = 150.0;
@@ -299,16 +303,23 @@ void Scene::DrawMenu()
 
 void Scene::BuildTransforms()
 {
-    
-
     // @@ When you are ready to try interactive viewing, replace the
     // following hard coded values for WorldProj and WorldView with
     // transformation matrices calculated from variables such as spin,
     // tilt, tr, ry, front, and back.
 
     rx = ry * (float)width / (float)height;
-    WorldView = Translate(tx, ty, -zoom) * Rotate(0, tilt) * Rotate(2, spin);
-    WorldProj = Perspective(rx, ry, front, back);
+
+    if (transformationMode == true)
+    {
+        WorldView = Rotate(0, tilt - 90) * Rotate(2, spin) * Translate(-eye.x, -eye.y, -eye.z);
+        WorldProj = Perspective(rx, ry, front, back);
+    }
+    else
+    {
+        WorldView = Translate(tx, ty, -zoom) * Rotate(0, tilt - 90) * Rotate(2, spin);
+        WorldProj = Perspective(rx, ry, front, back);
+    }
 
     // @@ Print the two matrices (in column-major order) for
     // comparison with the project document.
@@ -322,6 +333,25 @@ void Scene::BuildTransforms()
 // goals.)
 void Scene::DrawScene()
 {
+    static double prevTime = glfwGetTime();
+    double currTime = glfwGetTime();
+    double time_since_last_refresh = currTime - prevTime;
+    prevTime = currTime;
+    float step = speed * time_since_last_refresh; // Frame-independent movement
+    if (w_down)
+        eye += step * glm::vec3(sin(spin * rad), cos(spin * rad), 0.0);
+    if (a_down)
+        eye -= step * glm::vec3(cos(spin * rad), -sin(spin * rad), 0.0);
+    if (s_down)
+        eye -= step * glm::vec3(sin(spin * rad), cos(spin * rad), 0.0);
+    if (d_down)
+        eye += step * glm::vec3(cos(spin * rad), -sin(spin * rad), 0.0);
+
+    // Constant eye height relative to the ground
+    const float eyeHeight = 2.0f;
+    float groundZ = proceduralground->HeightAt(eye.x, eye.y);
+    eye.z = groundZ + eyeHeight;
+
     // Set the viewport
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);

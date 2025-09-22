@@ -42,6 +42,18 @@ public:
 
     // @@ Declare interactive viewing variables here. (spin, tilt, ry, front back, ...)
     float spin, tilt, rx, ry, tx, ty, zoom, front, back;
+
+    // Game-like navigation
+    glm::vec3 eye;
+    float speed;
+
+    bool w_down;
+    bool a_down;
+    bool s_down;
+    bool d_down;
+
+    bool transformationMode;
+
     // Light parameters
     float lightSpin, lightTilt, lightDist;
     glm::vec3 lightPos;

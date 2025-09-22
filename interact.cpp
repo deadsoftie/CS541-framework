@@ -47,17 +47,44 @@ void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 
     if  (action == GLFW_PRESS) {
         switch(key) {
-
-
         case GLFW_KEY_0: case GLFW_KEY_1: case GLFW_KEY_2: case GLFW_KEY_3: case GLFW_KEY_4:
         case GLFW_KEY_5: case GLFW_KEY_6: case GLFW_KEY_7: case GLFW_KEY_8: case GLFW_KEY_9:
             scene.mode = key-GLFW_KEY_0;
+            break;
+        case GLFW_KEY_W:
+            scene.w_down = true;
+            break;
+        case GLFW_KEY_A:
+            scene.a_down = true;
+            break;
+        case GLFW_KEY_S:
+            scene.s_down = true;
+            break;
+        case GLFW_KEY_D:
+            scene.d_down = true;
+            break;
+        case GLFW_KEY_TAB:
+            scene.transformationMode = !scene.transformationMode;
             break;
         case GLFW_KEY_ESCAPE: case GLFW_KEY_Q: // Escape and 'q' keys quit the application
             exit(0); } }
         
     else if (action == GLFW_RELEASE) {
-
+        switch (key)
+        {
+        case GLFW_KEY_W:
+            scene.w_down = false;
+            break;
+        case GLFW_KEY_A:
+            scene.a_down = false;
+            break;
+        case GLFW_KEY_S:
+            scene.s_down = false;
+            break;
+        case GLFW_KEY_D:
+            scene.d_down = false;
+            break;
+        }
     }
     
     // @@ Catch any key UP-transitions you want here.  Record any
