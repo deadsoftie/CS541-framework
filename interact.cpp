@@ -142,15 +142,15 @@ void MouseMotion(GLFWwindow* window, double x, double y)
         scene.lightTilt -= dy/3.0; }
 
     else if (leftDown) {
-        scene.spin += dx;
-        scene.tilt -= dy;
+        scene.spin -= dx/3.0;
+        scene.tilt += dy/3.0;
     }
 
     if (middleDown) { }
 
     if (rightDown) {
-        scene.tx += dx;
-        scene.ty += dy;
+        scene.tx += dx/5.0;
+        scene.ty -= dy/5.0;
     }
 
     // Record this position
