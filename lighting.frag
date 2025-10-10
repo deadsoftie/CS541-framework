@@ -26,8 +26,10 @@ uniform int objectId;
 uniform vec3 diffuse;
 uniform vec3 specular;
 uniform float shininess;
-uniform vec3 lightVal;
-uniform vec3 lightAmb; 
+uniform vec3 lightVal;     // Ii (Light intensity)
+uniform vec3 lightAmb;     // Ia (Ambient light)
+
+const float PI = 3.14159265359;
 
 void main()
 {
@@ -44,14 +46,44 @@ void main()
         if ((uv[0]+uv[1])%2==0)
             Kd *= 0.9; }
 
-    // Lighting calculations
-    float LN = max(dot(L,N), 0.0);
-    float HN = max(dot(H,N), 0.0);
+    // // Lighting calculations
+    // float LN = max(dot(L,N), 0.0);
+    // float HN = max(dot(H,N), 0.0);
 
-    // Phong lighting model
-    vec3 ambient = lightAmb * Kd;
-    vec3 diffuseContrib = lightVal * Kd * LN;
-    vec3 specularContrib = lightVal * specular * pow(HN, shininess);
+    // // Phong lighting model
+    // vec3 ambient = lightAmb * Kd;
+    // vec3 diffuseContrib = lightVal * Kd * LN;
+    // vec3 specularContrib = lightVal * specular * pow(HN, shininess);
+
+    // Clamping all the dot products to non-negative values
+    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotH = max(dot(N, H), 0.0);
+    float LdotH = max(dot(L, H), 0.0);
+    float VdotH = max(dot(V, H), 0.0);
+
+    // MICROFACET BRDF CALCULATION
+
+    // Fresnel term - Schlick approximation
+    vec3 F = specular + (vec3(1.0) - specular) * pow(1.0 - LdotH, 5.0);
     
-    FragColor.xyz = vec3(0.5,0.5,0.5)*Kd + Kd*max(dot(L,N),0.0);
+    // Masking term
+    float G_over_4NdotLNdotV = 1.0 / (LdotH * LdotH);
+    
+    // Normal distribution term D
+    float D = (shininess + 2.0) / (2.0 * PI) * pow(NdotH, shininess);
+    
+    // BRDF components
+    vec3 diffuseBRDF = Kd / PI;
+    vec3 specularBRDF = F * G_over_4NdotLNdotV * D;
+    
+    // Total BRDF
+    vec3 BRDF = diffuseBRDF + specularBRDF;
+    
+    // Final lighting calculation
+    vec3 ambient = lightAmb * Kd;
+    vec3 directLighting = lightVal * NdotL * BRDF;
+    
+    FragColor.xyz = ambient + directLighting;
+    FragColor.w = 1.0;
 }

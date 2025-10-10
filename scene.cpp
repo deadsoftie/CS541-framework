@@ -166,8 +166,8 @@ void Scene::InitializeScene()
     lightTilt = -45.0;
     lightDist = 100.0;
     // @@ Perhaps initialize additional scene lighting values here. (lightVal, lightAmb)
-    lightVal = {3, 3, 3};
-    lightAmb = {0.4, 0.4, 0.4};
+    lightVal = {3.0, 3.0, 3.0};
+    lightAmb = {0.15, 0.15, 0.15};
 
     CHECKERROR;
     objectRoot = new Object(NULL, nullId);
