@@ -46,15 +46,6 @@ void main()
         if ((uv[0]+uv[1])%2==0)
             Kd *= 0.9; }
 
-    // // Lighting calculations
-    // float LN = max(dot(L,N), 0.0);
-    // float HN = max(dot(H,N), 0.0);
-
-    // // Phong lighting model
-    // vec3 ambient = lightAmb * Kd;
-    // vec3 diffuseContrib = lightVal * Kd * LN;
-    // vec3 specularContrib = lightVal * specular * pow(HN, shininess);
-
     // Clamping all the dot products to non-negative values
     float NdotL = max(dot(N, L), 0.0);
     float NdotV = max(dot(N, V), 0.0);
