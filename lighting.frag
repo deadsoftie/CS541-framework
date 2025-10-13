@@ -59,14 +59,14 @@ void main()
     vec3 F = specular + (vec3(1.0) - specular) * pow(1.0 - LdotH, 5.0);
     
     // Masking term
-    float G_over_4NdotLNdotV = 1.0 / (LdotH * LdotH);
+    float G = 1.0 / (LdotH * LdotH);
     
     // Normal distribution term D
     float D = (shininess + 2.0) / (2.0 * PI) * pow(NdotH, shininess);
     
     // BRDF components
     vec3 diffuseBRDF = Kd / PI;
-    vec3 specularBRDF = F * G_over_4NdotLNdotV * D;
+    vec3 specularBRDF = (F * G * D) / 4.0;
     
     // Total BRDF
     vec3 BRDF = diffuseBRDF + specularBRDF;
