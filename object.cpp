@@ -31,11 +31,13 @@ using namespace gl;
 
 
 Object::Object(Shape* _shape, const int _objectId,
-               const glm::vec3 _diffuseColor, const glm::vec3 _specularColor, const float _shininess)
-    : diffuseColor(_diffuseColor), specularColor(_specularColor), shininess(_shininess),
-      shape(_shape), objectId(_objectId), drawMe(true)
-     
-{}
+               const glm::vec3 _diffuseColor, const glm::vec3 _specularColor, const float _shininess, Texture* _texture, Texture* _normalMap)
+	: diffuseColor(_diffuseColor), specularColor(_specularColor), shininess(_shininess), texture(_texture),
+	  normalMap(_normalMap),
+	  shape(_shape), objectId(_objectId), drawMe(true)
+
+{
+}
 
 
 void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
@@ -77,7 +79,28 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
     // load the texture into a texture-unit of your choice and inform
     // the shader program of the texture-unit number.  See
     // Texture::Bind for the 4 lines of code to do exactly that.
-    
+
+    // Bind the texture to texture unit 0
+    if (texture != NULL) {
+        texture->BindTexture(0, program->programId, "textureImage");
+        loc = glGetUniformLocation(program->programId, "hasTexture");
+        glUniform1i(loc, 1);
+    }
+    else {
+        loc = glGetUniformLocation(program->programId, "hasTexture");
+        glUniform1i(loc, 0);
+    }
+
+    // Bind the normal map to texture unit 1
+    if (normalMap != NULL) {
+        normalMap->BindTexture(1, program->programId, "normalMap");
+        loc = glGetUniformLocation(program->programId, "hasNormalMap");
+        glUniform1i(loc, 1);
+    }
+    else {
+        loc = glGetUniformLocation(program->programId, "hasNormalMap");
+        glUniform1i(loc, 0);
+    }
 
     // Draw this object
     CHECKERROR;
@@ -85,6 +108,16 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
         if (drawMe) 
             shape->DrawVAO();
     CHECKERROR;
+
+    // Unbind textures after drawing
+    if (texture != NULL)
+    {
+        texture->UnbindTexture(0);
+    }
+    if (normalMap != NULL)
+    {
+        normalMap->UnbindTexture(1);
+    }
 
 
     CHECKERROR;

@@ -133,6 +133,23 @@
   <ItemGroup>
     <Library Include="libs\glfw\lib-vc2019\glfw3.lib" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="lighting.frag" />
+    <None Include="lighting.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="emulator.h" />
+    <ClInclude Include="fbo.h" />
+    <ClInclude Include="framework.h" />
+    <ClInclude Include="interact.h" />
+    <ClInclude Include="object.h" />
+    <ClInclude Include="scene.h" />
+    <ClInclude Include="shader.h" />
+    <ClInclude Include="shapes.h" />
+    <ClInclude Include="simplexnoise.h" />
+    <ClInclude Include="texture.h" />
+    <ClInclude Include="transform.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
