@@ -33,6 +33,7 @@ class Object
     glm::vec3 diffuseColor;          // Diffuse color of object
     glm::vec3 specularColor;         // Specular color of object
     float shininess;            // Surface roughness value
+    float reflectionStrength;	// Reflection strength of object
 
     Texture* texture; // Texture of object
     Texture* normalMap; // Normal map texture of object

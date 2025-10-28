@@ -74,9 +74,9 @@ void main() {
     }
     
     if (objectId == seaId) {
-        vec3 R = reflect(-V, N);
+        vec3 R = reflect(V, N);
         vec2 reflectUV = vec2(-atan(R.y, R.x) * INV_2PI, acos(R.z) * INV_PI);
-        FragColor = texture(textureImage, reflectUV);
+        FragColor = texture(skyboxTexture, reflectUV);
         return;
     }
     
@@ -116,7 +116,7 @@ void main() {
     
     // Mix in reflections if needed
     if (reflectionStrength > 0.0) {
-        vec3 R = reflect(-V, N);
+        vec3 R = reflect(V, N);
         color = mix(color, sampleSkybox(R, skyboxTexture), reflectionStrength);
     }
     

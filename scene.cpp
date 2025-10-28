@@ -248,11 +248,14 @@ void Scene::InitializeScene()
     anim = new Object(NULL, nullId);
     room = new Object(RoomPolygons, roomId, brickColor, noSpec, 1, brickTexture, brickNormalMap);
     floor = new Object(FloorPolygons, floorId, floorColor, brightSpec, 10, floorTexture, floorNormalMap);
+    floor->reflectionStrength = 0.1;
     teapot = new Object(TeapotPolygons, teapotId, brassColor, brightSpec, 120, cracksTexture);
+    teapot->reflectionStrength = 0.1;
     podium = new Object(BoxPolygons, boxId, glm::vec3(woodColor), brightSpec, 10, woodTexture, woodNormalMap);
     sky = new Object(SpherePolygons, skyId, noSpec, noSpec, 0, skyTexture);
     ground = new Object(GroundPolygons, groundId, grassColor, noSpec, 1, grassTexture);
     sea = new Object(SeaPolygons, seaId, waterColor, brightSpec, 120, skyTexture, waterRippleNormalMap);
+    sea->reflectionStrength = 1.0;
     leftFrame = FramedPicture(Identity, lPicId, BoxPolygons, QuadPolygons, NULL);
     rightFrame = FramedPicture(Identity, rPicId, BoxPolygons, QuadPolygons, rightPicTexture);
     spheres = SphereOfSpheres(SpherePolygons);
@@ -480,10 +483,14 @@ void Scene::DrawScene()
     glUniform1i(loc, mode);
     CHECKERROR;
 
+    sky->texture->BindTexture(2, programId, "skyboxTexture");
+
     // Draw all objects (This recursively traverses the object hierarchy.)
     CHECKERROR;
     objectRoot->Draw(lightingProgram, Identity);
     CHECKERROR;
+
+    sky->texture->UnbindTexture(2);
 
     // Turn off the shader
     lightingProgram->UnuseShader();

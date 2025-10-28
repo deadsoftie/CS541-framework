@@ -60,6 +60,9 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
     loc = glGetUniformLocation(program->programId, "shininess");
     glUniform1f(loc, shininess);
 
+	loc = glGetUniformLocation(program->programId, "reflectionStrength");
+    glUniform1f(loc, reflectionStrength);
+
     // Inform the shader of which object is being drawn so it can make
     // object specific decisions.
     loc = glGetUniformLocation(program->programId, "objectId");
