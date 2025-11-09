@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////
 // The scene class contains all the parameters needed to define and
 // draw a simple scene, including:
@@ -91,17 +90,17 @@ glm::vec3 HSV2RGB(const float h, const float s, const float v)
 
 ////////////////////////////////////////////////////////////////////////
 // Constructs a hemisphere of spheres of varying hues
-Object *SphereOfSpheres(Shape *SpherePolygons)
+Object* SphereOfSpheres(Shape* SpherePolygons)
 {
-    Object *ob = new Object(NULL, nullId);
+    Object* ob = new Object(NULL, nullId);
 
     for (float angle = 0.0; angle < 360.0; angle += 18.0)
         for (float row = 0.075; row < PI / 2.0; row += PI / 2.0 / 6.0)
         {
             glm::vec3 hue = HSV2RGB(angle / 360.0, 1.0f - 2.0f * row / PI, 1.0f);
 
-            Object *sp = new Object(SpherePolygons, spheresId,
-                                    hue, glm::vec3(1.0, 1.0, 1.0), 120.0);
+            Object* sp = new Object(SpherePolygons, spheresId,
+                hue, glm::vec3(1.0, 1.0, 1.0), 120.0);
             float s = sin(row);
             float c = cos(row);
             ob->add(sp, Rotate(2, angle) * Translate(c, 0, s) * Scale(0.075 * c, 0.075 * c, 0.075 * c));
@@ -111,25 +110,25 @@ Object *SphereOfSpheres(Shape *SpherePolygons)
 
 ////////////////////////////////////////////////////////////////////////
 // Constructs a -1...+1  quad (canvas) framed by four (elongated) boxes
-Object *FramedPicture(const glm::mat4 &modelTr, const int objectId,
-                      Shape *BoxPolygons, Shape *QuadPolygons, Texture* pictureTexture)
+Object* FramedPicture(const glm::mat4& modelTr, const int objectId,
+    Shape* BoxPolygons, Shape* QuadPolygons, Texture* pictureTexture)
 {
     // This draws the frame as four (elongated) boxes of size +-1.0
     float w = 0.05; // Width of frame boards.
 
-    Object *frame = new Object(NULL, nullId);
-    Object *ob;
+    Object* frame = new Object(NULL, nullId);
+    Object* ob;
 
     glm::vec3 woodColor(87.0 / 255.0, 51.0 / 255.0, 35.0 / 255.0);
     ob = new Object(BoxPolygons, frameId,
-                    woodColor, glm::vec3(0.2, 0.2, 0.2), 10.0);
+        woodColor, glm::vec3(0.2, 0.2, 0.2), 10.0);
     frame->add(ob, Translate(0.0, 0.0, 1.0 + w) * Scale(1.0, w, w));
     frame->add(ob, Translate(0.0, 0.0, -1.0 - w) * Scale(1.0, w, w));
     frame->add(ob, Translate(1.0 + w, 0.0, 0.0) * Scale(w, w, 1.0 + 2 * w));
     frame->add(ob, Translate(-1.0 - w, 0.0, 0.0) * Scale(w, w, 1.0 + 2 * w));
 
     ob = new Object(QuadPolygons, objectId,
-                    woodColor, glm::vec3(0.0, 0.0, 0.0), 10.0, pictureTexture);
+        woodColor, glm::vec3(0.0, 0.0, 0.0), 10.0, pictureTexture);
     frame->add(ob, Rotate(0, 90));
 
     return frame;
@@ -158,7 +157,7 @@ void Scene::InitializeScene()
     back = 5000;
 
     // Game-like navigation
-    eye = {0, -20, 0};
+    eye = { 0, -20, 0 };
     speed = 10;
 
     // Set initial light parameters
@@ -166,8 +165,8 @@ void Scene::InitializeScene()
     lightTilt = -45.0;
     lightDist = 100.0;
     // @@ Perhaps initialize additional scene lighting values here. (lightVal, lightAmb)
-    lightVal = {3.0, 3.0, 3.0};
-    lightAmb = {0.15, 0.15, 0.15};
+    lightVal = { 3.0, 3.0, 3.0 };
+    lightAmb = { 0.15, 0.15, 0.15 };
 
     CHECKERROR;
     objectRoot = new Object(NULL, nullId);
@@ -177,6 +176,8 @@ void Scene::InitializeScene()
 
     // Create the lighting shader program from source code files.
     // @@ Initialize additional shaders if necessary
+
+    // LIGHTING SHADERS
     lightingProgram = new ShaderProgram();
     lightingProgram->AddShader("lighting.vert", GL_VERTEX_SHADER);
     lightingProgram->AddShader("lighting.frag", GL_FRAGMENT_SHADER);
@@ -187,19 +188,31 @@ void Scene::InitializeScene()
     glBindAttribLocation(lightingProgram->programId, 3, "vertexTangent");
     lightingProgram->LinkProgram();
 
-    // Create all the Polygon shapes
-    proceduralground = new ProceduralGround(grndSize, 400,
-                                            grndOctaves, grndFreq, grndPersistence,
-                                            grndLow, grndHigh);
+    // SHADOW SHADERS
+    shadowProgram = new ShaderProgram();
+    shadowProgram->AddShader("shadow.vert", GL_VERTEX_SHADER);
+    shadowProgram->AddShader("shadow.frag", GL_FRAGMENT_SHADER);
 
-    Shape *TeapotPolygons = new Teapot(fullPolyCount ? 12 : 2);
-    Shape *BoxPolygons = new Box();
-    Shape *SpherePolygons = new Sphere(32);
-    Shape *RoomPolygons = new Ply("room.ply");
-    Shape *FloorPolygons = new Plane(10.0, 10);
-    Shape *QuadPolygons = new Quad();
-    Shape *SeaPolygons = new Plane(2000.0, 50);
-    Shape *GroundPolygons = proceduralground;
+    glBindAttribLocation(shadowProgram->programId, 0, "vertex");
+    shadowProgram->LinkProgram();
+
+    // Create shadow map FBO
+    shadowFBO = new FBO();
+    shadowFBO->CreateFBO(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+
+    // Create all the Polygon shapes
+    proceduralGround = new ProceduralGround(grndSize, 400,
+        grndOctaves, grndFreq, grndPersistence,
+        grndLow, grndHigh);
+
+    Shape* TeapotPolygons = new Teapot(fullPolyCount ? 12 : 2);
+    Shape* BoxPolygons = new Box();
+    Shape* SpherePolygons = new Sphere(32);
+    Shape* RoomPolygons = new Ply("room.ply");
+    Shape* FloorPolygons = new Plane(10.0, 10);
+    Shape* QuadPolygons = new Quad();
+    Shape* SeaPolygons = new Plane(2000.0, 50);
+    Shape* GroundPolygons = proceduralGround;
 
     // Various colors used in the subsequent models
     glm::vec3 woodColor(87.0 / 255.0, 51.0 / 255.0, 35.0 / 255.0);
@@ -262,7 +275,7 @@ void Scene::InitializeScene()
 #ifdef REFL
     spheres->drawMe = true;
 #else
-    spheres->drawMe = false;
+    spheres->drawMe = true; // TODO: Return back to false after testing is completed
 #endif
 
     // @@ To change the scene hierarchy, examine the hierarchy created
@@ -397,10 +410,10 @@ void Scene::BuildTransforms()
 void Scene::DrawScene()
 {
     static double prevTime = glfwGetTime();
-    double currTime = glfwGetTime();
-    double time_since_last_refresh = currTime - prevTime;
+    const double currTime = glfwGetTime();
+    const double time_since_last_refresh = currTime - prevTime;
     prevTime = currTime;
-    float step = speed * time_since_last_refresh; // Frame-independent movement
+    const float step = speed * time_since_last_refresh; // Frame-independent movement
     if (w_down)
         eye += step * glm::vec3(sin(spin * rad), cos(spin * rad), 0.0);
     if (a_down)
@@ -412,22 +425,21 @@ void Scene::DrawScene()
 
     // Constant eye height relative to the ground
     const float eyeHeight = 2.0f;
-    float groundZ = proceduralground->HeightAt(eye.x, eye.y);
+    const float groundZ = proceduralGround->HeightAt(eye.x, eye.y);
     eye.z = groundZ + eyeHeight;
 
     // Set the viewport
     glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
 
     CHECKERROR;
     // Calculate the light's position from lightSpin, lightTilt, lightDist
     lightPos = glm::vec3(lightDist * cos(lightSpin * rad) * sin(lightTilt * rad),
-                         lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
-                         lightDist * cos(lightTilt * rad));
+        lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
+        lightDist * cos(lightTilt * rad));
 
     // Update position of any continuously animating objects
-    double atime = 360.0 * glfwGetTime() / 36;
-    for (std::vector<Object *>::iterator m = animated.begin(); m < animated.end(); m++)
+    const double atime = 360.0 * glfwGetTime() / 36;
+    for (auto m = animated.begin(); m < animated.end(); ++m)
         (*m)->animTr = Rotate(2, atime);
 
     BuildTransforms();
@@ -451,14 +463,70 @@ void Scene::DrawScene()
     int loc, programId;
 
     ////////////////////////////////////////////////////////////////////////////////
-    // Lighting pass
+    // PASS 1: Shadow Map Generation (from light's POV)
+    ////////////////////////////////////////////////////////////////////////////////
+
+    shadowProgram->UseShader();
+    programId = shadowProgram->programId;
+
+    // Bind the FBO to render to shadow map texture
+    shadowFBO->BindFBO();
+
+    // Set viewport to shadow map size
+    glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Create transformations from light's point of view
+    glm::vec3 lightLookAt = glm::vec3(0.0f, 0.0f, 0.0f);  // Light looks at origin
+    glm::vec3 upDir = glm::vec3(0.0f, 0.0f, 1.0f);
+
+    // Create LookAt matrix for light (V_L)
+    glm::mat4 lightView = glm::lookAt(lightPos, lightLookAt, upDir);
+
+    // Create perspective projection for light (P_L)
+    // Adjust these parameters to control shadow map coverage
+    float lightFOV = 60.0f * rad;
+    float lightAspect = 1.0f;
+    float lightNear = 1.0f;
+    float lightFar = 200.0f;
+    glm::mat4 lightProj = glm::perspective(lightFOV, lightAspect, lightNear, lightFar);
+
+    // Combined light view-projection matrix (P_L * V_L)
+    glm::mat4 lightViewProj = lightProj * lightView;
+
+    // Send combined matrix to shadow shader
+    loc = glGetUniformLocation(programId, "LightViewProj");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(lightViewProj));
+
+    // Enable front-face culling to reduce shadow acne
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+
+    // Draw all geometry from light's POV (this creates the shadow map)
+    CHECKERROR;
+    objectRoot->Draw(shadowProgram, Identity);
+    CHECKERROR;
+
+    // Disable culling
+    glDisable(GL_CULL_FACE);
+
+    // Unbind FBO (back to default framebuffer)
+    shadowFBO->UnbindFBO();
+
+    // Unuse shadow shader
+    shadowProgram->UnuseShader();
+
+    CHECKERROR;
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // PASS 2: Lighting with Shadows (from eye's POV)
     ////////////////////////////////////////////////////////////////////////////////
 
     // Choose the lighting shader
     lightingProgram->UseShader();
     programId = lightingProgram->programId;
 
-    // Set the viewport, and clear the screen
+    // Set the viewport to screen size, and clear the screen
     glViewport(0, 0, width, height);
     glClearColor(0.5, 0.5, 0.5, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -481,21 +549,43 @@ void Scene::DrawScene()
     glUniform3fv(loc, 1, &(lightAmb[0]));
     loc = glGetUniformLocation(programId, "mode");
     glUniform1i(loc, mode);
+
+    // Create shadow matrix: B * P_L * V_L
+    // B transforms from [-1,1] NDC space to [0,1] texture space
+    // B = Translate(0.5, 0.5, 0.5) * Scale(0.5, 0.5, 0.5)
+    glm::mat4 biasMatrix(
+        0.5f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.5f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.5f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f
+    );
+    glm::mat4 shadowMatrix = biasMatrix * lightViewProj;
+
+    // Send shadow matrix to lighting shader
+    loc = glGetUniformLocation(programId, "ShadowMatrix");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
+
     CHECKERROR;
 
+    // Bind skybox texture (texture unit 2)
     sky->texture->BindTexture(2, programId, "skyboxTexture");
+
+    // Bind shadow map texture (texture unit 3, avoiding 0 and 1 as per instructions)
+    shadowFBO->BindTexture(3, programId, "shadowMap");
 
     // Draw all objects (This recursively traverses the object hierarchy.)
     CHECKERROR;
     objectRoot->Draw(lightingProgram, Identity);
     CHECKERROR;
 
+    // Unbind textures
     sky->texture->UnbindTexture(2);
+    shadowFBO->UnbindTexture(3);
 
     // Turn off the shader
     lightingProgram->UnuseShader();
 
     ////////////////////////////////////////////////////////////////////////////////
-    // End of Lighting pass
+    // End of rendering passes
     ////////////////////////////////////////////////////////////////////////////////
 }

@@ -1,11 +1,12 @@
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 // Vertex shader for lighting
 //
-// Copyright 2013 DigiPen Institute of Technology
+// Copyright 2025 Rahul Nair - DigiPen Institute of Technology
 ////////////////////////////////////////////////////////////////////////
 #version 330
 
 uniform mat4 WorldView, WorldInverse, WorldProj, ModelTr, NormalTr;
+uniform mat4 ShadowMatrix; // B * P_L * V_L for shadow coordinate transformation
 
 in vec4 vertex;
 in vec3 vertexNormal;
@@ -14,6 +15,7 @@ in vec3 vertexTangent;
 
 out vec3 normalVec, lightVec, eyeVec, tanVec;
 out vec2 texCoord;
+out vec4 shadowCoord;
 
 uniform vec3 lightPos;
 uniform vec3 lightVal;
@@ -32,4 +34,7 @@ void main()
     eyeVec = eyePos - worldPos;
 
     texCoord = vertexTexture;
+    
+    // Shadow coordinates (transforming the world position to the shadow map space)
+    shadowCoord = ShadowMatrix * ModelTr * vertex;
 }

@@ -73,11 +73,14 @@ public:
         *ground, *sea, *spheres, *leftFrame, *rightFrame;
 
     std::vector<Object *> animated;
-    ProceduralGround *proceduralground;
+    ProceduralGround *proceduralGround;
 
     // Shader programs
     ShaderProgram *lightingProgram;
     // @@ Declare additional shaders if necessary
+    ShaderProgram *shadowProgram;
+    FBO* shadowFBO;
+    const int SHADOW_MAP_SIZE = 1024;
 
     // Options menu stuff
     bool show_demo_window;

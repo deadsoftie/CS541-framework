@@ -142,7 +142,7 @@ void MouseMotion(GLFWwindow* window, double x, double y)
         scene.lightTilt -= dy/3.0; }
 
     else if (leftDown) {
-        scene.spin -= dx/3.0;
+        scene.spin += dx/3.0;
         scene.tilt += dy/3.0;
     }
 

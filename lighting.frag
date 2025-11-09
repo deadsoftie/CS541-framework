@@ -1,5 +1,7 @@
-/////////////////////////////////////////////////////////////////////////
-// Pixel shader for lighting - OPTIMIZED VERSION
+////////////////////////////////////////////////////////////////////////
+// Fragment shader for lighting
+//
+// Copyright 2025 Rahul Nair - DigiPen Institute of Technology
 ////////////////////////////////////////////////////////////////////////
 #version 330
 
@@ -12,16 +14,20 @@ const int rPicId = 8, teapotId = 9, spheresId = 10, floorId = 11;
 
 in vec3 normalVec, lightVec, eyeVec, tanVec;
 in vec2 texCoord;
+in vec4 shadowCoord;
 
 uniform int objectId;
 uniform vec3 diffuse, specular, lightVal, lightAmb;
 uniform float shininess, reflectionStrength;
 uniform sampler2D textureImage, normalMap, skyboxTexture;
+uniform sampler2D shadowMap;
 uniform int hasTexture, hasNormalMap;
 
 const float PI = 3.14159265359;
 const float INV_PI = 0.31830988618;
 const float INV_2PI = 0.15915494309;
+
+const float SHADOW_BIAS = 0.005; // Depth offset to reduce shadow acne
 
 // Procedural checkerboard texture
 vec3 proceduralTexture(vec2 uv) {
@@ -52,6 +58,35 @@ vec2 getScaledUV(int id, vec2 uv) {
     if (id == floorId) return uv * 5.0;
     if (id == seaId) return uv * 100.0;
     return uv;
+}
+
+// Calculate shadow factor (1.0 = lit, 0.0 = shadowed)
+float calculateShadow() {
+    // Project shadow coordinate to get texture coordinates
+    vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
+    
+    // Check if the point is within the shadow map range
+    if (shadowCoord.w <= 0.0 || 
+        shadowIndex.x < 0.0 || shadowIndex.x > 1.0 ||
+        shadowIndex.y < 0.0 || shadowIndex.y > 1.0) {
+        // Point is outside shadow map - light it
+        // (Alternative: return 0.0 for square spotlight effect)
+        return 1.0;
+    }
+    
+    // Sample the shadow map to get the depth from light's POV
+    float lightDepth = texture(shadowMap, shadowIndex).w;
+    
+    // Get the current pixel's depth from light's POV
+    float pixelDepth = shadowCoord.w;
+    
+    // Compare depths with bias to reduce shadow acne
+    // Pixel is in shadow if it's farther from light than recorded depth
+    if (pixelDepth > lightDepth + SHADOW_BIAS) {
+        return 0.0;  // In shadow
+    }
+    
+    return 1.0;  // Lit
 }
 
 void main() {
@@ -102,6 +137,9 @@ void main() {
     float NdotL = max(dot(N, L), 0.0);
     float NdotH = max(dot(N, H), 0.0);
     float LdotH = max(dot(L, H), 0.0);
+
+    // Calculate shadow factor
+    float shadowFactor = calculateShadow();
     
     // Microfacet BRDF
     vec3 F = specular + (1.0 - specular) * pow(1.0 - LdotH, 5.0);
@@ -111,8 +149,9 @@ void main() {
     vec3 diffuseBRDF = Kd * INV_PI;
     vec3 specularBRDF = (F * G * D) * 0.25;
     
-    // Final lighting
-    vec3 color = lightAmb * Kd + lightVal * NdotL * (diffuseBRDF + specularBRDF);
+    // Final lighting with shadows
+    // Ambient is always present, diffuse and specular are modulated by shadow
+    vec3 color = lightAmb * Kd + shadowFactor * lightVal * NdotL * (diffuseBRDF + specularBRDF);
     
     // Mix in reflections if needed
     if (reflectionStrength > 0.0) {
