@@ -14,7 +14,6 @@
 
 #include "shapes.h"
 #include "object.h"
-#include "texture.h"
 #include "fbo.h"
 
 enum ObjectIds
@@ -80,7 +79,7 @@ public:
     // @@ Declare additional shaders if necessary
     ShaderProgram *shadowProgram;
     FBO* shadowFBO;
-    const int SHADOW_MAP_SIZE = 1024;
+    const int SHADOW_MAP_SIZE = 1024; // TODO: Change this later on
 
     // Options menu stuff
     bool show_demo_window;

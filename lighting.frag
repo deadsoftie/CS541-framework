@@ -90,6 +90,17 @@ float calculateShadow() {
 }
 
 void main() {
+
+    // Debug view - shows shadow coverage
+//    vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
+//    if (shadowCoord.w > 0.0 && shadowIndex.x >= 0.0 && shadowIndex.x <= 1.0 
+//        && shadowIndex.y >= 0.0 && shadowIndex.y <= 1.0) {
+//        FragColor = vec4(shadowIndex, 0.0, 1.0);  
+//    } else {
+//        FragColor = vec4(0.5, 0.5, 0.5, 1.0);     
+//    }
+//    return;
+
     vec3 N = normalize(normalVec);
     vec3 V = normalize(eyeVec);
     

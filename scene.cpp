@@ -12,7 +12,6 @@
 // others are set by the framework in response to user mouse/keyboard
 // interactions.  All of them can be used to draw the scene.
 
-#include "math.h"
 #include <iostream>
 #include <stdlib.h>
 
