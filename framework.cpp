@@ -24,7 +24,7 @@ Scene scene;
 
 static void error_callback(int error, const char* msg)
 {
-    fputs(msg, stderr);
+    fputs(msg, stderr);  // NOLINT(cert-err33-c)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -56,9 +56,9 @@ int main(int argc, char** argv)
     ImGui_ImplGlfw_InitForOpenGL(scene.window, true);
     ImGui_ImplOpenGL3_Init();
     
-    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
-    printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    printf("Rendered by: %s\n", glGetString(GL_RENDERER));
+    printf("OpenGL Version: %p\n", glGetString(GL_VERSION));
+    printf("GLSL Version: %p\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("Rendered by: %p\n", glGetString(GL_RENDERER));
     fflush(stdout);
 
     // Initialize interaction and the scene to be drawn.

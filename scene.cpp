@@ -67,7 +67,7 @@ static glm::vec3 HSV2RGB(const float h, const float s, const float v)
     if (s == 0.0)
         return glm::vec3(v, v, v);
 
-    int i = (int)(h * 6.0) % 6;
+    int i = static_cast<int>(h * 6.0) % 6;
     float f = (h * 6.0f) - i;
     float p = v * (1.0f - s);
     float q = v * (1.0f - s * f);
@@ -92,16 +92,16 @@ static Object* SphereOfSpheres(Shape* SpherePolygons)
 {
     Object* ob = new Object(NULL, nullId);
 
-    for (float angle = 0.0; angle < 360.0; angle += 18.0)
-        for (float row = 0.075; row < PI / 2.0; row += PI / 2.0 / 6.0)
+    for (float angle = 0.0; angle < 360.0; angle += 18.0f)
+        for (float row = 0.075f; row < PI / 2.0; row += PI / 2.0f / 6.0f)
         {
-            glm::vec3 hue = HSV2RGB(angle / 360.0, 1.0f - 2.0f * row / PI, 1.0f);
+            glm::vec3 hue = HSV2RGB(angle / 360.0f, 1.0f - 2.0f * row / PI, 1.0f);
 
             Object* sp = new Object(SpherePolygons, spheresId,
                 hue, glm::vec3(1.0, 1.0, 1.0), 120.0);
             float s = sin(row);
             float c = cos(row);
-            ob->add(sp, Rotate(2, angle) * Translate(c, 0, s) * Scale(0.075 * c, 0.075 * c, 0.075 * c));
+            ob->add(sp, Rotate(2, angle) * Translate(c, 0, s) * Scale(0.075f * c, 0.075f * c, 0.075f * c));
         }
     return ob;
 }
@@ -112,7 +112,7 @@ static Object* FramedPicture(const glm::mat4& modelTr, const int objectId,
                              Shape* BoxPolygons, Shape* QuadPolygons, Texture* pictureTexture)
 {
     // This draws the frame as four (elongated) boxes of size +-1.0
-    float w = 0.05; // Width of frame boards.
+    float w = 0.05f; // Width of frame boards.
 
     Object* frame = new Object(NULL, nullId);
     Object* ob;
@@ -120,10 +120,10 @@ static Object* FramedPicture(const glm::mat4& modelTr, const int objectId,
     glm::vec3 woodColor(87.0 / 255.0, 51.0 / 255.0, 35.0 / 255.0);
     ob = new Object(BoxPolygons, frameId,
         woodColor, glm::vec3(0.2, 0.2, 0.2), 10.0);
-    frame->add(ob, Translate(0.0, 0.0, 1.0 + w) * Scale(1.0, w, w));
-    frame->add(ob, Translate(0.0, 0.0, -1.0 - w) * Scale(1.0, w, w));
-    frame->add(ob, Translate(1.0 + w, 0.0, 0.0) * Scale(w, w, 1.0 + 2 * w));
-    frame->add(ob, Translate(-1.0 - w, 0.0, 0.0) * Scale(w, w, 1.0 + 2 * w));
+    frame->add(ob, Translate(0.0, 0.0, 1.0f + w) * Scale(1.0, w, w));
+    frame->add(ob, Translate(0.0, 0.0, -1.0f - w) * Scale(1.0, w, w));
+    frame->add(ob, Translate(1.0f + w, 0.0, 0.0) * Scale(w, w, 1.0f + 2 * w));
+    frame->add(ob, Translate(-1.0f - w, 0.0, 0.0) * Scale(w, w, 1.0f + 2 * w));
 
     ob = new Object(QuadPolygons, objectId,
         woodColor, glm::vec3(0.0, 0.0, 0.0), 10.0, pictureTexture);
@@ -257,17 +257,18 @@ void Scene::InitializeScene()
     anim = new Object(NULL, nullId);
     room = new Object(RoomPolygons, roomId, brickColor, noSpec, 1, brickTexture, brickNormalMap);
     floor = new Object(FloorPolygons, floorId, floorColor, brightSpec, 10, floorTexture, floorNormalMap);
-    floor->reflectionStrength = 0.1;
+    floor->reflectionStrength = 0.1f;
     teapot = new Object(TeapotPolygons, teapotId, brassColor, brightSpec, 120, cracksTexture);
-    teapot->reflectionStrength = 0.1;
+    teapot->reflectionStrength = 0.1f;
     podium = new Object(BoxPolygons, boxId, glm::vec3(woodColor), brightSpec, 10, woodTexture, woodNormalMap);
     sky = new Object(SpherePolygons, skyId, noSpec, noSpec, 0, skyTexture);
     ground = new Object(GroundPolygons, groundId, grassColor, noSpec, 1, grassTexture);
     sea = new Object(SeaPolygons, seaId, waterColor, brightSpec, 120, skyTexture, waterRippleNormalMap);
-    sea->reflectionStrength = 1.0;
+    sea->reflectionStrength = 1.0f;
     leftFrame = FramedPicture(Identity, lPicId, BoxPolygons, QuadPolygons, NULL);
     rightFrame = FramedPicture(Identity, rPicId, BoxPolygons, QuadPolygons, rightPicTexture);
     spheres = SphereOfSpheres(SpherePolygons);
+
 #ifdef REFL
     spheres->drawMe = true;
 #else
@@ -288,9 +289,9 @@ void Scene::InitializeScene()
     }
     objectRoot->add(central);
 #ifndef REFL
-    objectRoot->add(room, Translate(0.0, 0.0, 0.02));
+    objectRoot->add(room, Translate(0.0, 0.0, 0.02f));
 #endif
-    objectRoot->add(floor, Translate(0.0, 0.0, 0.02));
+    objectRoot->add(floor, Translate(0.0, 0.0, 0.02f));
 
     // Central model has a rudimentary animation (constant rotation on Z)
     animated.push_back(anim);
@@ -298,7 +299,7 @@ void Scene::InitializeScene()
     // Central contains a teapot on a podium and an external sphere of spheres
     central->add(podium, Translate(0.0, 0, 0));
     central->add(anim, Translate(0.0, 0, 0));
-    anim->add(teapot, Translate(0, 0, 1) * Scale(0.31, 0.31, 0.31));
+    anim->add(teapot, Translate(0, 0, 1) * Scale(0.31f, 0.31f, 0.31f));
 
     if (fullPolyCount)
         anim->add(spheres, Translate(0.0, 0.0, 0.0) * Scale(16, 16, 16));
@@ -306,8 +307,8 @@ void Scene::InitializeScene()
     // Room contains two framed pictures
     if (fullPolyCount)
     {
-        room->add(leftFrame, Translate(-1.5, 9.85, 1.) * Scale(0.8, 0.8, 0.8));
-        room->add(rightFrame, Translate(1.5, 9.85, 1.) * Scale(0.8, 0.8, 0.8));
+        room->add(leftFrame, Translate(-1.5f, 9.85f, 1.0f) * Scale(0.8f, 0.8f, 0.8f));
+        room->add(rightFrame, Translate(1.5f, 9.85f, 1.0f) * Scale(0.8f, 0.8f, 0.8f));
     }
 
     CHECKERROR;
@@ -343,11 +344,25 @@ void Scene::DrawMenu()
             ImGui::EndMenu();
         }
 
+        // Lighting Menu
+        if (ImGui::BeginMenu("Lighting"))
+        {
+            if (ImGui::MenuItem("Phong", "", mode == 0))
+            {
+                mode = 0;
+            }
+            if (ImGui::MenuItem("BRDF", "", mode == 1))
+            {
+                mode = 1;
+            }
+            ImGui::EndMenu();
+        }
+
         // This menu demonstrates how to provide the user a choice
         // among a set of choices.  The current choice is stored in a
         // variable named "mode" in the application, and sent to the
         // shader to be used as you wish.
-        if (ImGui::BeginMenu("Menu "))
+        if (ImGui::BeginMenu("Menu"))
         {
             if (ImGui::MenuItem("<sample menu of choices>", "", false, false))
             {
@@ -409,7 +424,7 @@ void Scene::DrawScene()
     const double currTime = glfwGetTime();
     const double time_since_last_refresh = currTime - prevTime;
     prevTime = currTime;
-    const float step = speed * time_since_last_refresh; // Frame-independent movement
+    const float step = speed * static_cast<float>(time_since_last_refresh); // Frame-independent movement
     if (w_down)
         eye += step * glm::vec3(sin(spin * rad), cos(spin * rad), 0.0);
     if (a_down)
@@ -436,7 +451,7 @@ void Scene::DrawScene()
     // Update position of any continuously animating objects
     const double atime = 360.0 * glfwGetTime() / 36;
     for (auto m = animated.begin(); m < animated.end(); ++m)
-        (*m)->animTr = Rotate(2, atime);
+        (*m)->animTr = Rotate(2, static_cast<float>(atime));
 
     BuildTransforms();
 
@@ -507,7 +522,7 @@ void Scene::DrawScene()
     glDisable(GL_CULL_FACE);
 
     // Unbind FBO (back to default framebuffer)
-    shadowFBO->UnbindFBO();
+    FBO::UnbindFBO();
 
     // Unuse shadow shader
     shadowProgram->UnuseShader();
@@ -576,7 +591,7 @@ void Scene::DrawScene()
 
     // Unbind textures
     sky->texture->UnbindTexture(2);
-    shadowFBO->UnbindTexture(3);
+    FBO::UnbindTexture(3);
 
     // Turn off the shader
     lightingProgram->UnuseShader();
