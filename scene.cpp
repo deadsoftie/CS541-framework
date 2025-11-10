@@ -347,6 +347,9 @@ void Scene::DrawMenu()
         // Lighting Menu
         if (ImGui::BeginMenu("Lighting"))
         {
+            if (ImGui::MenuItem("<Not implemented yet>", "", false, false))
+            {
+            }
             if (ImGui::MenuItem("Phong", "", mode == 0))
             {
                 mode = 0;
