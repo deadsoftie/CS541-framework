@@ -67,7 +67,7 @@ static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int 
             scene.transformationMode = !scene.transformationMode;
             break;
         case GLFW_KEY_ESCAPE: case GLFW_KEY_Q: // Escape and 'q' keys quit the application
-            exit(0);  // NOLINT(concurrency-mt-unsafe)
+            exit(0);
 		default:
         	break;
         } }
@@ -94,7 +94,7 @@ static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int 
     
     // @@ Catch any key UP-transitions you want here.  Record any
     // change of state in variables in the scene object.
-    fflush(stdout);  // NOLINT(cert-err33-c)
+    fflush(stdout);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -138,24 +138,24 @@ static void MouseMotion(GLFWwindow* window, double x, double y)
     // position.
     
     // Calculate the change in the mouse position
-    int dx = x-mouseX;
-    int dy = y-mouseY;
+    const int dx = static_cast<int>(x - mouseX);
+    const int dy = static_cast<int>(y - mouseY);
 
     // @@ Please don't disable this shifted-left-button code. 
     if (leftDown && shifted) {  // Rotate light position
-        scene.lightSpin += dx/3.0;
-        scene.lightTilt -= dy/3.0; }
+        scene.lightSpin += static_cast<float>(dx) / 3.0f;
+        scene.lightTilt -= static_cast<float>(dy) / 3.0f; }
 
     else if (leftDown) {
-        scene.spin += dx/3.0;
-        scene.tilt += dy/3.0;
+        scene.spin += static_cast<float>(dx) / 3.0f;
+        scene.tilt += static_cast<float>(dy) / 3.0f;
     }
 
     if (middleDown) { }
 
     if (rightDown) {
-        scene.tx += dx/5.0;
-        scene.ty -= dy/5.0;
+        scene.tx += static_cast<float>(dx) / 5.0f;
+        scene.ty -= static_cast<float>(dy) / 5.0f;
     }
 
     // Record this position

@@ -22,10 +22,10 @@ float* Pntr(glm::mat4& M)
 // Return a rotation matrix around an axis (0:X, 1:Y, 2:Z) by an angle
 // measured in degrees.  NOTE: Make sure to convert degrees to radians
 // before using sin and cos.  HINT: radians = degrees*PI/180
-constexpr float pi = 3.14159f;
+const float pi = 3.14159f;
 glm::mat4 Rotate(const int i, const float theta)
 {
-    float radians = theta * pi / 180.0;
+    const float radians = theta * pi / 180.0f;
     float cosAngle = cos(radians);
     float sinAngle = sin(radians);
 
