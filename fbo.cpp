@@ -35,32 +35,32 @@ void FBO::CreateFBO(const int w, const int h)
     // possible.
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, static_cast<int>(GL_RGBA32F), width, height, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<int>(GL_CLAMP_TO_EDGE));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<int>(GL_CLAMP_TO_EDGE));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<int>(GL_LINEAR));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<int>(GL_LINEAR));
 
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
                               GL_TEXTURE_2D, textureID, 0);
 
     // Check for completeness/correctness
-    int status = (int)glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-    if (status != int(GL_FRAMEBUFFER_COMPLETE_EXT))
+    int status = static_cast<int>(glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT));
+    if (status != static_cast<int>(GL_FRAMEBUFFER_COMPLETE_EXT))
         printf("FBO Error: %d\n", status);
 
     // Unbind the fbo until it's ready to be used
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
-void FBO::BindFBO() { glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboID); }
+void FBO::BindFBO() const { glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboID); }
 void FBO::UnbindFBO() { glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); }
 
-void FBO::BindTexture(const int unit, const int programId, const std::string& name)
+void FBO::BindTexture(const int unit, const int programId, const std::string& name) const
 {
-    glActiveTexture((gl::GLenum)((int)GL_TEXTURE0 + unit));
+    glActiveTexture(static_cast<gl::GLenum>(static_cast<int>(GL_TEXTURE0) + unit));
     glBindTexture(GL_TEXTURE_2D, textureID);
     int loc = glGetUniformLocation(programId, name.c_str());
     glUniform1i(loc, unit);
@@ -68,6 +68,6 @@ void FBO::BindTexture(const int unit, const int programId, const std::string& na
 
 void FBO::UnbindTexture(const int unit)
 {  
-    glActiveTexture((gl::GLenum)((int)GL_TEXTURE0 + unit));
+    glActiveTexture(static_cast<gl::GLenum>(static_cast<int>(GL_TEXTURE0) + unit));
     glBindTexture(GL_TEXTURE_2D, 0);
 }

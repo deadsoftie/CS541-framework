@@ -5,6 +5,8 @@
 // it is "Unbound", the texture is available for use as any normal
 // texture.
 ////////////////////////////////////////////////////////////////////////
+#ifndef FBO_H
+#define FBO_H
 
 class FBO {
 public:
@@ -15,14 +17,15 @@ public:
     void CreateFBO(const int w, const int h);
     
     // Bind this FBO to receive the output of the graphics pipeline.
-    void BindFBO();
+    void BindFBO() const;
     
     // Unbind this FBO from the graphics pipeline;  graphics goes to screen by default.
-    void UnbindFBO();
+    static void UnbindFBO();
 
     // Bind this FBO's texture to a texture unit.
-    void BindTexture(const int unit, const int programId, const std::string& name);
+    void BindTexture(const int unit, const int programId, const std::string& name) const;
 
     // Unbind this FBO's texture from a texture unit.
-    void UnbindTexture(const int unit);
+    static void UnbindTexture(const int unit);
 };
+#endif // FBO_H

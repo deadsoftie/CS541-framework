@@ -67,7 +67,7 @@ static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int 
             scene.transformationMode = !scene.transformationMode;
             break;
         case GLFW_KEY_ESCAPE: case GLFW_KEY_Q: // Escape and 'q' keys quit the application
-            exit(0);
+            exit(0);  // NOLINT(concurrency-mt-unsafe)
 		default:
         	break;
         } }
@@ -94,7 +94,7 @@ static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int 
     
     // @@ Catch any key UP-transitions you want here.  Record any
     // change of state in variables in the scene object.
-    fflush(stdout);
+    fflush(stdout);  // NOLINT(cert-err33-c)
 }
 
 ////////////////////////////////////////////////////////////////////////
