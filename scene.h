@@ -11,6 +11,8 @@
 // Some of these parameters are set when the scene is built, and
 // others are set by the framework in response to user mouse/keyboard
 // interactions.  All of them can be used to draw the scene.
+#ifndef SCENE_H
+#define SCENE_H
 
 #include "shapes.h"
 #include "object.h"
@@ -79,7 +81,7 @@ public:
     // @@ Declare additional shaders if necessary
     ShaderProgram *shadowProgram;
     FBO* shadowFBO;
-    const int SHADOW_MAP_SIZE = 1024; // TODO: Change this later on
+    const int SHADOW_MAP_SIZE = 4096;
 
     // Options menu stuff
     bool show_demo_window;
@@ -89,3 +91,4 @@ public:
     void DrawMenu();
     void DrawScene();
 };
+#endif // SCENE_H

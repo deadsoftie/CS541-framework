@@ -10,25 +10,25 @@
 extern Scene scene;       // Declared in framework.cpp, but used here.
 
 // Some globals used for mouse handling.
-double mouseX, mouseY;
-bool shifted = false;
-bool leftDown = false;
-bool middleDown = false;
-bool rightDown = false;
+static double mouseX, mouseY;
+static bool shifted = false;
+static bool leftDown = false;
+static bool middleDown = false;
+static bool rightDown = false;
 
 ////////////////////////////////////////////////////////////////////////
 // Function called to exit
-void Quit(void *clientData)
+static void Quit(void *clientData)
 {
     glfwSetWindowShouldClose(scene.window, 1);
 }
 
-std::string ACTION[3] = {"Release", "Press", "Repeat"};
+static std::string ACTION[3] = {"Release", "Press", "Repeat"};
 
 ////////////////////////////////////////////////////////////////////////
 // Called for keyboard actions.
 
-void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (ImGui::GetIO().WantCaptureKeyboard) return;
 
@@ -67,7 +67,10 @@ void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
             scene.transformationMode = !scene.transformationMode;
             break;
         case GLFW_KEY_ESCAPE: case GLFW_KEY_Q: // Escape and 'q' keys quit the application
-            exit(0); } }
+            exit(0);
+		default:
+        	break;
+        } }
         
     else if (action == GLFW_RELEASE) {
         switch (key)
@@ -84,6 +87,8 @@ void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         case GLFW_KEY_D:
             scene.d_down = false;
             break;
+		default:
+        	break;
         }
     }
     
@@ -94,7 +99,7 @@ void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 ////////////////////////////////////////////////////////////////////////
 // Called when a mouse button changes state.
-void MouseButton(GLFWwindow* window, int button, int action, int mods)
+static void MouseButton(GLFWwindow* window, int button, int action, int mods)
 {        
 
     if (ImGui::GetIO().WantCaptureMouse) return;
@@ -117,7 +122,7 @@ void MouseButton(GLFWwindow* window, int button, int action, int mods)
 
 ////////////////////////////////////////////////////////////////////////
 // Called by GLFW when a mouse moves (while a button is down)
-void MouseMotion(GLFWwindow* window, double x, double y)
+static void MouseMotion(GLFWwindow* window, double x, double y)
 {
     if (ImGui::GetIO().WantCaptureMouse) return;
                      
@@ -159,7 +164,7 @@ void MouseMotion(GLFWwindow* window, double x, double y)
 }
 
 
-void Scroll(GLFWwindow* window, double x, double y)
+static void Scroll(GLFWwindow* window, double x, double y)
 {
     if (ImGui::GetIO().WantCaptureMouse)  return;
 

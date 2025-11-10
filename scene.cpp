@@ -13,7 +13,7 @@
 // interactions.  All of them can be used to draw the scene.
 
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
@@ -21,7 +21,6 @@ using namespace gl;
 
 #include <glu.h> // For gluErrorString
 
-#define GLM_FORCE_CTOR_INIT
 #define GLM_FORCE_RADIANS
 #define GLM_SWIZZLE
 #include <glm/glm.hpp>
@@ -32,19 +31,19 @@ using namespace gl;
 #include "object.h"
 #include "texture.h"
 #include "transform.h"
-const bool fullPolyCount = true; // Use false when emulating the graphics pipeline in software
+constexpr bool fullPolyCount = true; // Use false when emulating the graphics pipeline in software
 
 const float PI = 3.14159f;
 const float rad = PI / 180.0f; // Convert degrees to radians
 
 glm::mat4 Identity(1.0);
 
-const float grndSize = 100.0;       // Island radius;  Minimum about 20;  Maximum 1000 or so
-const float grndOctaves = 4.0;      // Number of levels of detail to compute
-const float grndFreq = 0.03;        // Number of hills per (approx) 50m
-const float grndPersistence = 0.03; // Terrain roughness: Slight:0.01  rough:0.05
-const float grndLow = -3.0;         // Lowest extent below sea level
-const float grndHigh = 5.0;         // Highest extent above sea level
+constexpr float grndSize = 100.0f;       // Island radius;  Minimum about 20;  Maximum 1000 or so
+constexpr float grndOctaves = 4.0f;      // Number of levels of detail to compute
+constexpr float grndFreq = 0.03f;        // Number of hills per (approx) 50m
+constexpr float grndPersistence = 0.03f; // Terrain roughness: Slight:0.01  rough:0.05
+constexpr float grndLow = -3.0f;         // Lowest extent below sea level
+constexpr float grndHigh = 5.0f;         // Highest extent above sea level
 
 ////////////////////////////////////////////////////////////////////////
 // This macro makes it easy to sprinkle checks for OpenGL errors
@@ -63,7 +62,7 @@ const float grndHigh = 5.0;         // Highest extent above sea level
     }
 
 // Create an RGB color from human friendly parameters: hue, saturation, value
-glm::vec3 HSV2RGB(const float h, const float s, const float v)
+static glm::vec3 HSV2RGB(const float h, const float s, const float v)
 {
     if (s == 0.0)
         return glm::vec3(v, v, v);
@@ -89,7 +88,7 @@ glm::vec3 HSV2RGB(const float h, const float s, const float v)
 
 ////////////////////////////////////////////////////////////////////////
 // Constructs a hemisphere of spheres of varying hues
-Object* SphereOfSpheres(Shape* SpherePolygons)
+static Object* SphereOfSpheres(Shape* SpherePolygons)
 {
     Object* ob = new Object(NULL, nullId);
 
@@ -109,8 +108,8 @@ Object* SphereOfSpheres(Shape* SpherePolygons)
 
 ////////////////////////////////////////////////////////////////////////
 // Constructs a -1...+1  quad (canvas) framed by four (elongated) boxes
-Object* FramedPicture(const glm::mat4& modelTr, const int objectId,
-    Shape* BoxPolygons, Shape* QuadPolygons, Texture* pictureTexture)
+static Object* FramedPicture(const glm::mat4& modelTr, const int objectId,
+                             Shape* BoxPolygons, Shape* QuadPolygons, Texture* pictureTexture)
 {
     // This draws the frame as four (elongated) boxes of size +-1.0
     float w = 0.05; // Width of frame boards.
@@ -195,11 +194,9 @@ void Scene::InitializeScene()
     glBindAttribLocation(shadowProgram->programId, 0, "vertex");
     shadowProgram->LinkProgram();
 
-    // Create shadow map FBO
     shadowFBO = new FBO();
     shadowFBO->CreateFBO(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
 
-    // Create all the Polygon shapes
     proceduralGround = new ProceduralGround(grndSize, 400,
         grndOctaves, grndFreq, grndPersistence,
         grndLow, grndHigh);
@@ -274,7 +271,7 @@ void Scene::InitializeScene()
 #ifdef REFL
     spheres->drawMe = true;
 #else
-    spheres->drawMe = true; // TODO: Return back to false after testing is completed
+    spheres->drawMe = false;
 #endif
 
     // @@ To change the scene hierarchy, examine the hierarchy created
@@ -383,7 +380,7 @@ void Scene::BuildTransforms()
     // transformation matrices calculated from variables such as spin,
     // tilt, tr, ry, front, and back.
 
-    rx = ry * (float)width / (float)height;
+    rx = ry * static_cast<float>(width) / static_cast<float>(height);
 
     if (transformationMode == true)
     {
@@ -423,14 +420,14 @@ void Scene::DrawScene()
         eye += step * glm::vec3(cos(spin * rad), -sin(spin * rad), 0.0);
 
     // Constant eye height relative to the ground
-    const float eyeHeight = 2.0f;
+    constexpr float eyeHeight = 2.0f;
     const float groundZ = proceduralGround->HeightAt(eye.x, eye.y);
     eye.z = groundZ + eyeHeight;
 
     // Set the viewport
     glfwGetFramebufferSize(window, &width, &height);
 
-    CHECKERROR;
+    CHECKERROR
     // Calculate the light's position from lightSpin, lightTilt, lightDist
     lightPos = glm::vec3(lightDist * cos(lightSpin * rad) * sin(lightTilt * rad),
         lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
@@ -458,7 +455,7 @@ void Scene::DrawScene()
     //   Unset the shader
     ////////////////////////////////////////////////////////////////////////////////
 
-    CHECKERROR;
+    CHECKERROR
     int loc, programId;
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -502,9 +499,9 @@ void Scene::DrawScene()
     glCullFace(GL_FRONT);
 
     // Draw all geometry from light's POV (this creates the shadow map)
-    CHECKERROR;
+    CHECKERROR
     objectRoot->Draw(shadowProgram, Identity);
-    CHECKERROR;
+    CHECKERROR
 
     // Disable culling
     glDisable(GL_CULL_FACE);
@@ -515,7 +512,7 @@ void Scene::DrawScene()
     // Unuse shadow shader
     shadowProgram->UnuseShader();
 
-    CHECKERROR;
+    CHECKERROR
 
     ////////////////////////////////////////////////////////////////////////////////
     // PASS 2: Lighting with Shadows (from eye's POV)
@@ -564,7 +561,7 @@ void Scene::DrawScene()
     loc = glGetUniformLocation(programId, "ShadowMatrix");
     glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
-    CHECKERROR;
+    CHECKERROR
 
     // Bind skybox texture (texture unit 2)
     sky->texture->BindTexture(2, programId, "skyboxTexture");
@@ -573,9 +570,9 @@ void Scene::DrawScene()
     shadowFBO->BindTexture(3, programId, "shadowMap");
 
     // Draw all objects (This recursively traverses the object hierarchy.)
-    CHECKERROR;
+    CHECKERROR
     objectRoot->Draw(lightingProgram, Identity);
-    CHECKERROR;
+    CHECKERROR
 
     // Unbind textures
     sky->texture->UnbindTexture(2);
