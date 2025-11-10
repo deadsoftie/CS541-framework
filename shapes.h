@@ -114,7 +114,7 @@ public:
     ProceduralGround(const float _range, const int n,
                      const float _octaves, const float _persistence, const float _scale,
                      const float _low, const float _high);
-    float HeightAt(const float x, const float y);
+    float HeightAt(const float x, const float y) const;
 };
 
 class Quad: public Shape

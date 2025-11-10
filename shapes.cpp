@@ -22,7 +22,7 @@
 
 #include <vector>
 #include <fstream>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
@@ -37,7 +37,7 @@ using namespace gl;
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
-#include "math.h"
+#include <cmath>
 #include "shapes.h"
 #include "rply.h"
 #include "simplexnoise.h"
@@ -47,18 +47,18 @@ const float rad = PI/180.0f;
 
 void pushquad(std::vector<glm::ivec3> &Tri, int i, int j, int k, int l)
 {
-    Tri.push_back(glm::ivec3(i,j,k));
-    Tri.push_back(glm::ivec3(i,k,l));
+    Tri.emplace_back(i,j,k);
+    Tri.emplace_back(i,k,l);
 }
 
 // Batch up all the data defining a shape to be drawn (example: the
 // teapot) as a Vertex Array object (VAO) and send it to the graphics
 // card.  Return an OpenGL identifier for the created VAO.
-unsigned int VaoFromTris(std::vector<glm::vec4> Pnt,
-                         std::vector<glm::vec3> Nrm,
-                         std::vector<glm::vec2> Tex,
-                         std::vector<glm::vec3> Tan,
-                         std::vector<glm::ivec3> Tri)
+static unsigned int VaoFromTris(std::vector<glm::vec4> Pnt,
+                                std::vector<glm::vec3> Nrm,
+                                std::vector<glm::vec2> Tex,
+                                std::vector<glm::vec3> Tan,
+                                std::vector<glm::ivec3> Tri)
 {
     unsigned int vaoID;
     glGenVertexArrays(1, &vaoID);
@@ -349,15 +349,15 @@ Teapot::Teapot(const int n)
                     u2*v0*(*p20) + u2*v1*(*p21) + u2*v2*(*p22) + u2*v3*(*p23) +
                     u3*v0*(*p30) + u3*v1*(*p31) + u3*v2*(*p32) + u3*v3*(*p33);
                 //*pp++ = glm::vec4(V[0], V[1], V[2], 1.0);
-                Pnt.push_back(glm::vec4(V[0], V[1], V[2], 1.0));
-                Tex.push_back(glm::vec2(u,v));
+                Pnt.emplace_back(V[0], V[1], V[2], 1.0);
+                Tex.emplace_back(u,v);
 
                 // Evaluate the u-tangent of the Bezier patch at (u,v)
                 glm::vec3 du =
                     du0*v0*(*p10-*p00) + du0*v1*(*p11-*p01) + du0*v2*(*p12-*p02) + du0*v3*(*p13-*p03) +
                     du1*v0*(*p20-*p10) + du1*v1*(*p21-*p11) + du1*v2*(*p22-*p12) + du1*v3*(*p23-*p13) +
                     du2*v0*(*p30-*p20) + du2*v1*(*p31-*p21) + du2*v2*(*p32-*p22) + du2*v3*(*p33-*p23);
-                Tan.push_back(du);
+                Tan.emplace_back(du);
 
                 // Evaluate the v-tangent of the Bezier patch at (u,v)
                 glm::vec3 dv =
@@ -367,7 +367,7 @@ Teapot::Teapot(const int n)
                     u3*dv0*(*p31-*p30) + u3*dv1*(*p32-*p31) + u3*dv2*(*p33-*p32);
 
                 // Calculate the surface normal as the cross product of the two tangents.
-                Nrm.push_back(glm::cross(dv,du));
+                Nrm.emplace_back(glm::cross(dv,du));
 
                 //-(du[1]*dv[2]-du[2]*dv[1]);
                 //*np++ = -(du[2]*dv[0]-du[0]*dv[2]);
@@ -418,10 +418,10 @@ void Box::face(const glm::mat4 tr)
   // Four vertices to make a single face, with its own normal and
   // texture coordinates.
   for (int i=0; i<8;  i+=2) {
-      Pnt.push_back(tr*glm::vec4(verts[i], verts[i+1], 1.0f, 1.0f));
-      Nrm.push_back(glm::vec3(tr*glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)));
-      Tex.push_back(glm::vec2(texcd[i], texcd[i+1]));
-      Tan.push_back(glm::vec3(tr*glm::vec4(1.0f, 0.0f, 0.0f, 0.0f))); }
+      Pnt.emplace_back(tr*glm::vec4(verts[i], verts[i+1], 1.0f, 1.0f));
+      Nrm.emplace_back(tr*glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+      Tex.emplace_back(texcd[i], texcd[i+1]);
+      Tan.emplace_back(tr*glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)); }
     
   pushquad(Tri, n, n+1, n+2, n+3);
 }
@@ -444,10 +444,10 @@ Sphere::Sphere(const int n)
             float x = cos(s)*sin(t);
             float y = sin(s)*sin(t);
             float z = cos(t);
-            Pnt.push_back(glm::vec4(x,y,z,1.0f));
-            Nrm.push_back(glm::vec3(x,y,z));
-            Tex.push_back(glm::vec2(s/(2*PI), t/PI));
-            Tan.push_back(glm::vec3(-sin(s), cos(s), 0.0));
+            Pnt.emplace_back(x,y,z,1.0f);
+            Nrm.emplace_back(x,y,z);
+            Tex.emplace_back(s/(2*PI), t/PI);
+            Tan.emplace_back(-sin(s), cos(s), 0.0);
             if (i>0 && j>0) {
                 pushquad(Tri, (i-1)*(n+1) + (j-1),
                                       (i-1)*(n+1) + (j),
@@ -467,22 +467,22 @@ Disk::Disk(const int n)
     shininess = 120.0;
     
     // Push center point
-    Pnt.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    Nrm.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
-    Tex.push_back(glm::vec2(0.5, 0.5));
-    Tan.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+    Pnt.emplace_back(0.0f, 0.0f, 0.0f, 1.0f);
+    Nrm.emplace_back(0.0f, 0.0f, 1.0f);
+    Tex.emplace_back(0.5, 0.5);
+    Tan.emplace_back(1.0f, 0.0f, 0.0f);
 
     float d = 2.0f*PI/float(n);
     for (int i=0;  i<=n;  i++) {
         float s = i*2.0f*PI/float(n);
         float x = cos(s);
         float y = sin(s);
-        Pnt.push_back(glm::vec4(x,y,0.0f,1.0f));
-        Nrm.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
-        Tex.push_back(glm::vec2(x*0.5+0.5, y*0.5+0.5));
-        Tan.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+        Pnt.emplace_back(x,y,0.0f,1.0f);
+        Nrm.emplace_back(0.0f, 0.0f, 1.0f);
+        Tex.emplace_back(x*0.5+0.5, y*0.5+0.5);
+        Tan.emplace_back(1.0f, 0.0f, 0.0f);
         if (i>0) {
-          Tri.push_back(glm::ivec3(0, i+1, i)); } }
+          Tri.emplace_back(0, i+1, i); } }
     MakeVAO();
     printf("%6ld %6ld Disk\n", Pnt.size(), Tri.size());
 }
@@ -504,10 +504,10 @@ Cylinder::Cylinder(const int n)
             float x = cos(s);
             float y = sin(s);
             float z = t*2.0f - 1.0f;
-            Pnt.push_back(glm::vec4(x,y,z,1.0f));
-            Nrm.push_back(glm::vec3(x,y, 0.0f));
-            Tex.push_back(glm::vec2(s/(2.0*PI), t));
-            Tan.push_back(glm::vec3(-sin(s), cos(s), 0.0));
+            Pnt.emplace_back(x,y,z,1.0f);
+            Nrm.emplace_back(x,y, 0.0f);
+            Tex.emplace_back(s/(2.0*PI), t);
+            Tan.emplace_back(-sin(s), cos(s), 0.0);
             if (i>0 && j>0) {
                 pushquad(Tri, (i-1)*(2) + (j-1),
                                       (i-1)*(2) + (j),
@@ -561,40 +561,40 @@ glm::ivec3 staticTri;
 // Vertex callback;  Must be static (stupid C++)
 int Ply::vertex_cb(p_ply_argument argument) {
     long index;
-    Ply *ply;
+    Ply* ply = nullptr;
     ply_get_argument_user_data(argument, (void**)&ply, &index);
     double c = ply_get_argument_value(argument);
     staticPnt[index] = c;
     if (index==2) {
         staticPnt[3] = 1.0;
-        ply->Pnt.push_back(staticPnt);
-        ply->Tan.push_back(glm::vec3()); }
+        ply->Pnt.emplace_back(staticPnt);
+        ply->Tan.emplace_back(); }
     return 1;
 }
 // Normal callback;  Must be static (stupid C++)
 int Ply::normal_cb(p_ply_argument argument) {
     long index;
-    Ply *ply;
+    Ply *ply = nullptr;
     ply_get_argument_user_data(argument, (void**)&ply, &index);
     double c = ply_get_argument_value(argument);
     staticNrm[index] = c;
     if (index==2) {
-        ply->Nrm.push_back(staticNrm); }
+        ply->Nrm.emplace_back(staticNrm); }
     return 1;
 }
 // Texture callback;  Must be static (stupid C++)
 int Ply::texture_cb(p_ply_argument argument) {
     long index;
-    Ply *ply;
+    Ply *ply = nullptr;
     ply_get_argument_user_data(argument, (void**)&ply, &index);
     double c = ply_get_argument_value(argument);
     staticTex[index] = c;
     if (index==1) {
-        ply->Tex.push_back(staticTex); }
+        ply->Tex.emplace_back(staticTex); }
     return 1;
 }
 
-void ComputeTangent(Ply* ply)
+static void ComputeTangent(Ply* ply)
 {
     int t = ply->Tri.size() - 1;
     int i = ply->Tri[t][0];
@@ -615,21 +615,21 @@ int Ply::face_cb(p_ply_argument argument) {
     long length, value_index;
     long index;
     Ply *ply;
-    ply_get_argument_user_data(argument, (void**)&ply, &index);
+    ply_get_argument_user_data(argument, reinterpret_cast<void**>(&ply), &index);
     ply_get_argument_property(argument, NULL, &length, &value_index);
 
     if (value_index == -1) {
     }
     else {
         if (value_index<2) {
-            staticTri[value_index] = (int)ply_get_argument_value(argument); }
+            staticTri[value_index] = static_cast<int>(ply_get_argument_value(argument)); }
         else if (value_index==2) {
-            staticTri[2] = (int)ply_get_argument_value(argument);
+            staticTri[2] = static_cast<int>(ply_get_argument_value(argument));
             ply->Tri.push_back(staticTri);
             ComputeTangent(ply); }
         else if (value_index==3) {
             staticTri[1] = staticTri[2];
-            staticTri[2] = (int)ply_get_argument_value(argument);
+            staticTri[2] = static_cast<int>(ply_get_argument_value(argument));
             ply->Tri.push_back(staticTri);
             ComputeTangent(ply); } }
 
@@ -647,13 +647,13 @@ Plane::Plane(const float r, const int n)
     shininess = 120.0;
 
     for (int i=0;  i<=n;  i++) {
-        float s = i/float(n);
+        float s = i/static_cast<float>(n);
         for (int j=0;  j<=n;  j++) {
-            float t = j/float(n);
-            Pnt.push_back(glm::vec4(s*2.0*r-r, t*2.0*r-r, 0.0, 1.0));
-            Nrm.push_back(glm::vec3(0.0, 0.0, 1.0));
-            Tex.push_back(glm::vec2(s, t));
-            Tan.push_back(glm::vec3(1.0, 0.0, 0.0));
+            float t = j/static_cast<float>(n);
+            Pnt.emplace_back(s*2.0*r-r, t*2.0*r-r, 0.0, 1.0);
+            Nrm.emplace_back(0.0, 0.0, 1.0);
+            Tex.emplace_back(s, t);
+            Tan.emplace_back(1.0, 0.0, 0.0);
             if (i>0 && j>0) {
                 pushquad(Tri, (i-1)*(n+1) + (j-1),
                                       (i-1)*(n+1) + (j),
@@ -678,22 +678,22 @@ ProceduralGround::ProceduralGround(const float _range, const int n,
     specularColor = glm::vec3(0.0, 0.0, 0.0);
     xoff = range*( time(NULL)%1000 );
 
-    float h = 0.001;
+    float h = 0.001f;
     for (int i=0;  i<=n;  i++) {
-        float s = i/float(n);
+        float s = i/static_cast<float>(n);
         for (int j=0;  j<=n;  j++) {
-            float t = j/float(n);
+            float t = j/static_cast<float>(n);
             float x = s*2.0*range-range;
             float y = t*2.0*range-range;
             float z = HeightAt(x, y);
             float zu = HeightAt(x+h, y);
             float zv = HeightAt(x, y+h);
-            Pnt.push_back(glm::vec4(x, y, z, 1.0));
+            Pnt.emplace_back(x, y, z, 1.0);
             glm::vec3 du(1.0, 0.0, (zu-z)/h);
             glm::vec3 dv(0.0, 1.0, (zv-z)/h);
-            Nrm.push_back(glm::normalize(glm::cross(du,dv)));
-            Tex.push_back(glm::vec2(s, t));
-            Tan.push_back(glm::vec3(1.0, 0.0, 0.0));
+            Nrm.emplace_back(glm::normalize(glm::cross(du,dv)));
+            Tex.emplace_back(s, t);
+            Tan.emplace_back(1.0, 0.0, 0.0);
             if (i>0 && j>0) {
                 pushquad(Tri,
                          (i-1)*(n+1) + (j-1),
@@ -705,7 +705,7 @@ ProceduralGround::ProceduralGround(const float _range, const int n,
     printf("%6ld %6ld Ground\n", Pnt.size(), Tri.size());
 }
 
-float ProceduralGround::HeightAt(const float x, const float y)
+float ProceduralGround::HeightAt(const float x, const float y) const
 {
     glm::vec3 highPoint = glm::vec3(0.0, 0.0, 0.01);
 
@@ -728,13 +728,13 @@ Quad::Quad(const int n)
 
     float r = 1.0;
     for (int i=0;  i<=n;  i++) {
-        float s = i/float(n);
+        float s = static_cast<float>(i / n);
         for (int j=0;  j<=n;  j++) {
-            float t = j/float(n);
-            Pnt.push_back(glm::vec4(s*2.0*r-r, t*2.0*r-r, 0.0, 1.0));
-            Nrm.push_back(glm::vec3(0.0, 0.0, 1.0));
-            Tex.push_back(glm::vec2(s, t));
-            Tan.push_back(glm::vec3(1.0, 0.0, 0.0));
+            float t = static_cast<float>(j / n);
+            Pnt.emplace_back(s*2.0*r-r, t*2.0*r-r, 0.0, 1.0);
+            Nrm.emplace_back(0.0, 0.0, 1.0);
+            Tex.emplace_back(s, t);
+            Tan.emplace_back(1.0, 0.0, 0.0);
             if (i>0 && j>0) {
                 pushquad(Tri,
                          (i-1)*(n+1) + (j-1),

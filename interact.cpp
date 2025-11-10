@@ -28,14 +28,14 @@ static std::string ACTION[3] = {"Release", "Press", "Repeat"};
 ////////////////////////////////////////////////////////////////////////
 // Called for keyboard actions.
 
-static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void Keyboard(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
 {
     if (ImGui::GetIO().WantCaptureKeyboard) return;
 
     if (action == GLFW_REPEAT) return; // Because keyboard autorepeat is evil.
         
     printf("Keyboard %c(%d);  S%d %s M%d\n", key, key, scancode, ACTION[action].c_str(), mods);
-    fflush(stdout);
+    fflush(stdout);  // NOLINT(cert-err33-c)
     
     // Track SHIFT/NO-SHIFT transitions. (The mods parameter should do this, but doesn't.)
     if (key==GLFW_KEY_LEFT_SHIFT || key==GLFW_KEY_RIGHT_SHIFT)
@@ -99,7 +99,7 @@ static void Keyboard(GLFWwindow* window, int key, int scancode, int action, int 
 
 ////////////////////////////////////////////////////////////////////////
 // Called when a mouse button changes state.
-static void MouseButton(GLFWwindow* window, int button, int action, int mods)
+static void MouseButton(GLFWwindow* window, const int button, const int action, const int mods)
 {        
 
     if (ImGui::GetIO().WantCaptureMouse) return;
@@ -122,7 +122,7 @@ static void MouseButton(GLFWwindow* window, int button, int action, int mods)
 
 ////////////////////////////////////////////////////////////////////////
 // Called by GLFW when a mouse moves (while a button is down)
-static void MouseMotion(GLFWwindow* window, double x, double y)
+static void MouseMotion(GLFWwindow* window, const double x, const double y)
 {
     if (ImGui::GetIO().WantCaptureMouse) return;
                      
@@ -164,7 +164,7 @@ static void MouseMotion(GLFWwindow* window, double x, double y)
 }
 
 
-static void Scroll(GLFWwindow* window, double x, double y)
+static void Scroll(GLFWwindow* window, const double x, const double y)
 {
     if (ImGui::GetIO().WantCaptureMouse)  return;
 
