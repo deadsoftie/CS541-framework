@@ -36,7 +36,7 @@ constexpr bool fullPolyCount = true; // Use false when emulating the graphics pi
 const float PI = 3.14159f;
 const float rad = PI / 180.0f; // Convert degrees to radians
 
-glm::mat4 Identity(1.0);
+static glm::mat4 Identity(1.0);
 
 constexpr float grndSize = 100.0f;       // Island radius;  Minimum about 20;  Maximum 1000 or so
 constexpr float grndOctaves = 4.0f;      // Number of levels of detail to compute
