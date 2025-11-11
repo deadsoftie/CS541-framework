@@ -344,22 +344,22 @@ void Scene::DrawMenu()
             ImGui::EndMenu();
         }
 
-        // Lighting Menu
-        if (ImGui::BeginMenu("Lighting"))
-        {
-            if (ImGui::MenuItem("<Not implemented yet>", "", false, false))
-            {
-            }
-            if (ImGui::MenuItem("Phong", "", mode == 0))
-            {
-                mode = 0;
-            }
-            if (ImGui::MenuItem("BRDF", "", mode == 1))
-            {
-                mode = 1;
-            }
-            ImGui::EndMenu();
-        }
+        //// Lighting Menu
+        //if (ImGui::BeginMenu("Lighting"))
+        //{
+        //    if (ImGui::MenuItem("<Not implemented yet>", "", false, false))
+        //    {
+        //    }
+        //    if (ImGui::MenuItem("Phong", "", mode == 0))
+        //    {
+        //        mode = 0;
+        //    }
+        //    if (ImGui::MenuItem("BRDF", "", mode == 1))
+        //    {
+        //        mode = 1;
+        //    }
+        //    ImGui::EndMenu();
+        //}
 
         // This menu demonstrates how to provide the user a choice
         // among a set of choices.  The current choice is stored in a
