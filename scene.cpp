@@ -490,20 +490,20 @@ void Scene::DrawScene()
     glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Create transformations from light's point of view
+    // Transformations from light's point of view
     glm::vec3 lightLookAt = glm::vec3(0.0f, 0.0f, 0.0f);  // Light looks at origin
     glm::vec3 upDir = glm::vec3(0.0f, 0.0f, 1.0f);
 
-    // Create LookAt matrix for light (V_L)
+    // LookAt matrix for light (V_L)
     glm::mat4 lightView = glm::lookAt(lightPos, lightLookAt, upDir);
 
-    // Create perspective projection for light (P_L)
-    // Adjust these parameters to control shadow map coverage
+    // Perspective projection for light (P_L)
     float lightFOV = 60.0f * rad;
     float lightAspect = 1.0f;
     float lightNear = 1.0f;
     float lightFar = 200.0f;
-    glm::mat4 lightProj = glm::perspective(lightFOV, lightAspect, lightNear, lightFar);
+
+    glm::mat4 lightProj = Perspective(lightFOV, lightAspect, lightNear, lightFar);
 
     // Combined light view-projection matrix (P_L * V_L)
     glm::mat4 lightViewProj = lightProj * lightView;
@@ -564,7 +564,7 @@ void Scene::DrawScene()
     loc = glGetUniformLocation(programId, "mode");
     glUniform1i(loc, mode);
 
-    // Create shadow matrix: B * P_L * V_L
+    // Shadow matrix: B * P_L * V_L
     // B transforms from [-1,1] NDC space to [0,1] texture space
     // B = Translate(0.5, 0.5, 0.5) * Scale(0.5, 0.5, 0.5)
     glm::mat4 biasMatrix(
@@ -575,7 +575,7 @@ void Scene::DrawScene()
     );
     glm::mat4 shadowMatrix = biasMatrix * lightViewProj;
 
-    // Send shadow matrix to lighting shader
+    // Sending shadow matrix to lighting shader
     loc = glGetUniformLocation(programId, "ShadowMatrix");
     glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
@@ -587,7 +587,7 @@ void Scene::DrawScene()
     // Bind shadow map texture (texture unit 3, avoiding 0 and 1 as per instructions)
     shadowFBO->BindTexture(3, programId, "shadowMap");
 
-    // Draw all objects (This recursively traverses the object hierarchy.)
+    // Draw all objects
     CHECKERROR
     objectRoot->Draw(lightingProgram, Identity);
     CHECKERROR
