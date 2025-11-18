@@ -23,6 +23,7 @@ using namespace gl;
 
 #define GLM_FORCE_RADIANS
 #define GLM_SWIZZLE
+#define REFL
 #include <glm/glm.hpp>
 #include <glm/ext.hpp> // For printing GLM objects with to_string
 
