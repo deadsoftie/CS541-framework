@@ -1,174 +1,101 @@
-////////////////////////////////////////////////////////////////////////
-// Fragment shader for lighting
-//
-// Copyright 2025 Rahul Nair - DigiPen Institute of Technology
+/////////////////////////////////////////////////////////////////////////
+// Pixel shader for lighting
 ////////////////////////////////////////////////////////////////////////
 #version 330
 
-out vec4 FragColor;
+// These definitions agree with the ObjectIds enum in scene.h
+const int     nullId	= 0;
+const int     skyId	= 1;
+const int     seaId	= 2;
+const int     groundId	= 3;
+const int     roomId	= 4;
+const int     boxId	= 5;
+const int     frameId	= 6;
+const int     lPicId	= 7;
+const int     rPicId	= 8;
+const int     teapotId	= 9;
+const int     spheresId	= 10;
+const int     floorId	= 11;
 
-// Object ID constants
-const int nullId = 0, skyId = 1, seaId = 2, groundId = 3;
-const int roomId = 4, boxId = 5, frameId = 6, lPicId = 7;
-const int rPicId = 8, teapotId = 9, spheresId = 10, floorId = 11;
-
-in vec3 normalVec, lightVec, eyeVec, tanVec;
-in vec2 texCoord;
-in vec4 shadowCoord;
-
-uniform int objectId;
-uniform vec3 diffuse, specular, lightVal, lightAmb;
-uniform float shininess, reflectionStrength;
-uniform sampler2D textureImage, normalMap, skyboxTexture;
-uniform sampler2D shadowMap;
-uniform int hasTexture, hasNormalMap;
-
-const float PI = 3.14159265359;
+const float PI = 3.1415926;
 const float INV_PI = 0.31830988618;
 const float INV_2PI = 0.15915494309;
+const float SHADOW_BIAS = 0.005;
 
-const float SHADOW_BIAS = 0.005; // Depth offset to reduce shadow acne
+vec3 BRDF(vec3 N, vec3 V, vec3 L, vec3 Ks, vec3 Kd, vec3 Ia, vec3 Il, float a, float shadow)
+{
+    vec3 H = normalize(L + V);
+    float LN = max(dot(L, N), 0.0);
+    float HN = max(dot(H, N), 0.0);
+    float LH = max(dot(L, H), 0.0);
+    
+    vec3 F = Ks + (1.0 - Ks) * pow(1.0 - LH, 5.0);
+    float G = 1/pow(LH, 2.0);   
+    float D = ((a + 2.0) / (2.0 * PI)) * pow(HN, a);
 
-// Procedural checkerboard texture
-vec3 proceduralTexture(vec2 uv) {
+    vec3 BRDF = (Kd / PI) + ((F * G * D)/4);
+    
+    return Ia * Kd + Il * LN * BRDF * shadow;
+}
+vec3 SkyCalculation(vec3 reference, sampler2D skyTexture)
+{
+    vec2 uv = vec2(-atan(reference.y, reference.x) * INV_2PI, acos(reference.z) * INV_PI);
+    return texture(skyTexture, uv).rgb;
+}
+
+vec3 CalcNormal(vec3 N, vec2 uv, vec3 tanVec, sampler2D normalMap)
+{
+    vec3 delta = texture(normalMap, uv).xyz;
+    delta = delta * 2.0 - vec3(1, 1, 1);
+    vec3 T = normalize(tanVec);
+    vec3 B = normalize(cross(T, N));
+
+    return normalize(delta.x * T + delta.y * B + delta.z * N);
+}
+
+vec2 SetUV(int objectId, vec2 uv)
+{
+    if(objectId == roomId) return uv.yx * 10;
+    if(objectId == seaId) return uv * 100;
+    if(objectId == groundId) return uv * 50;
+    return uv;
+}
+
+vec3 ProceduralImage(vec2 uv)
+{
     vec2 checker = floor(uv * 10.0);
     return vec3(mod(checker.x + checker.y, 2.0));
 }
 
-// Texture with 10% border
-vec3 conditionalTexture(vec2 uv, sampler2D tex) {
-    const float border = 0.1;
-    const float invScale = 1.0 / 0.8; // 1.0 / (1.0 - 2.0 * border)
-    
-    bvec4 inBorder = bvec4(uv.x < border, uv.x > 0.9, uv.y < border, uv.y > 0.9);
-    if (any(inBorder)) return vec3(0.5);
-    
-    return texture(tex, (uv - border) * invScale).xyz;
+vec3 RightFrameImage(sampler2D tex, vec2 uv)
+{
+    if(uv.x < .1 || uv.x >.9 || uv.y < .1 || uv.y > .9)
+        return vec3(0.5);
+    return texture(tex, (uv - 0.1) / 0.8).rgb;
 }
 
-vec3 sampleSkybox(vec3 dir, sampler2D skyTex) {
-    vec2 uv = vec2(-atan(dir.y, dir.x) * INV_2PI, acos(dir.z) * INV_PI);
-    return texture(skyTex, uv).xyz;
-}
-
-// Get UV scaling based on object ID
-vec2 getScaledUV(int id, vec2 uv) {
-    if (id == roomId) return uv.yx * 10.0;
-    if (id == groundId) return uv * 50.0;
-    if (id == floorId) return uv * 5.0;
-    if (id == seaId) return uv * 100.0;
-    return uv;
-}
-
-// Calculate shadow factor (1.0 = lit, 0.0 = shadowed)
-float calculateShadow() {
-    // Project shadow coordinate to get texture coordinates
+bool IsInShadow(vec4 shadowCoord, sampler2D shadowMap)
+{
     vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
     
-    // Check if the point is within the shadow map range
+    // is the pixel inside the shadow map?
     if (shadowCoord.w <= 0.0 || 
         shadowIndex.x < 0.0 || shadowIndex.x > 1.0 ||
-        shadowIndex.y < 0.0 || shadowIndex.y > 1.0) {
-        // Point is outside shadow map - light it
-        // (Alternative: return 0.0 for square spotlight effect)
-        return 1.0;
+        shadowIndex.y < 0.0 || shadowIndex.y > 1.0) 
+    {
+        return false;
     }
     
-    // Sample the shadow map to get the depth from light's POV
+    // depth from shadow map
     float lightDepth = texture(shadowMap, shadowIndex).w;
-    
-    // Get the current pixel's depth from light's POV
+
+    // depth from camera
     float pixelDepth = shadowCoord.w;
-    
-    // Compare depths with bias to reduce shadow acne
-    // Pixel is in shadow if it's farther from light than recorded depth
-    if (pixelDepth > lightDepth + SHADOW_BIAS) {
-        return 0.0;  // In shadow
-    }
-    
-    return 1.0;  // Lit
-}
 
-void main() {
-
-    // Debug view - shows shadow coverage
-//    vec2 shadowIndex = shadowCoord.xy / shadowCoord.w;
-//    if (shadowCoord.w > 0.0 && shadowIndex.x >= 0.0 && shadowIndex.x <= 1.0 
-//        && shadowIndex.y >= 0.0 && shadowIndex.y <= 1.0) {
-//        FragColor = vec4(shadowIndex, 0.0, 1.0);  
-//    } else {
-//        FragColor = vec4(0.5, 0.5, 0.5, 1.0);     
-//    }
-//    return;
-
-    vec3 N = normalize(normalVec);
-    vec3 V = normalize(eyeVec);
+    // pixel in Shadow if further from shadow depth
+    // add bias to prevent shadows from itself -> Reduce acne
+    if( pixelDepth > lightDepth + SHADOW_BIAS)
+        return true;
     
-    if (objectId == skyId) {
-        FragColor = vec4(sampleSkybox(V, textureImage), 1.0);
-        return;
-    }
-    
-    // Compute UV once
-    vec2 uv = getScaledUV(objectId, texCoord);
-    
-    if (hasNormalMap == 1) {
-        vec3 delta = texture(normalMap, uv).xyz * 2.0 - 1.0;
-        vec3 T = normalize(tanVec);
-        vec3 B = cross(T, N);
-        N = normalize(delta.x * T + delta.y * B + delta.z * N);
-    }
-    
-    if (objectId == seaId) {
-        vec3 R = reflect(V, N);
-        vec2 reflectUV = vec2(-atan(R.y, R.x) * INV_2PI, acos(R.z) * INV_PI);
-        FragColor = texture(skyboxTexture, reflectUV);
-        return;
-    }
-    
-    vec3 Kd = diffuse;
-    if (objectId == lPicId) {
-        Kd = proceduralTexture(texCoord);
-    } else if (hasTexture == 1) {
-        Kd = (objectId == rPicId) ? 
-             conditionalTexture(texCoord, textureImage) : 
-             texture(textureImage, uv).xyz;
-    }
-    
-    // Handle pure reflections early
-    if (reflectionStrength >= 0.99) {
-        vec3 R = reflect(-V, N);
-        FragColor = vec4(sampleSkybox(R, skyboxTexture), 1.0);
-        return;
-    }
-    
-    vec3 L = normalize(lightVec);
-    vec3 H = normalize(L + V);
-
-    float NdotL = max(dot(N, L), 0.0);
-    float NdotH = max(dot(N, H), 0.0);
-    float LdotH = max(dot(L, H), 0.0);
-
-    // Calculate shadow factor
-    float shadowFactor = calculateShadow();
-    
-    // Microfacet BRDF
-    vec3 F = specular + (1.0 - specular) * pow(1.0 - LdotH, 5.0);
-    float G = 1.0 / (LdotH * LdotH);
-    float D = (shininess + 2.0) * 0.5 * INV_PI * pow(NdotH, shininess);
-    
-    vec3 diffuseBRDF = Kd * INV_PI;
-    vec3 specularBRDF = (F * G * D) * 0.25;
-    
-    // Final lighting with shadows
-    // Ambient is always present, diffuse and specular are modulated by shadow
-    vec3 color = lightAmb * Kd + shadowFactor * lightVal * NdotL * (diffuseBRDF + specularBRDF);
-    
-    // Mix in reflections if needed
-    if (reflectionStrength > 0.0) {
-        vec3 R = reflect(V, N);
-        color = mix(color, sampleSkybox(R, skyboxTexture), reflectionStrength);
-    }
-    
-    FragColor = vec4(color, 1.0);
+    return false;    
 }

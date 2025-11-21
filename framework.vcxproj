@@ -134,8 +134,12 @@
     <Library Include="libs\glfw\lib-vc2019\glfw3.lib" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="total.frag" />
+    <None Include="total.vert" />
     <None Include="lighting.frag" />
     <None Include="lighting.vert" />
+    <None Include="reflection.frag" />
+    <None Include="reflection.vert" />
     <None Include="shadow.frag" />
     <None Include="shadow.vert" />
   </ItemGroup>

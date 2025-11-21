@@ -4,37 +4,3 @@
 // Copyright 2025 Rahul Nair - DigiPen Institute of Technology
 ////////////////////////////////////////////////////////////////////////
 #version 330
-
-uniform mat4 WorldView, WorldInverse, WorldProj, ModelTr, NormalTr;
-uniform mat4 ShadowMatrix; // B * P_L * V_L for shadow coordinate transformation
-
-in vec4 vertex;
-in vec3 vertexNormal;
-in vec2 vertexTexture;
-in vec3 vertexTangent;
-
-out vec3 normalVec, lightVec, eyeVec, tanVec;
-out vec2 texCoord;
-out vec4 shadowCoord;
-
-uniform vec3 lightPos;
-uniform vec3 lightVal;
-uniform vec3 lightAmb;
-
-void main()
-{      
-    gl_Position = WorldProj*WorldView*ModelTr*vertex;
-    
-    vec3 worldPos = (ModelTr*vertex).xyz;
-    normalVec = vertexNormal*mat3(NormalTr); 
-    tanVec = vertexTangent*mat3(NormalTr);
-    lightVec = lightPos - worldPos;
-
-    vec3 eyePos = (WorldInverse*vec4(0,0,0,1)).xyz;
-    eyeVec = eyePos - worldPos;
-
-    texCoord = vertexTexture;
-    
-    // Shadow coordinates (transforming the world position to the shadow map space)
-    shadowCoord = ShadowMatrix * ModelTr * vertex;
-}

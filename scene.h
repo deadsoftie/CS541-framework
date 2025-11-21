@@ -11,15 +11,13 @@
 // Some of these parameters are set when the scene is built, and
 // others are set by the framework in response to user mouse/keyboard
 // interactions.  All of them can be used to draw the scene.
-#ifndef SCENE_H
-#define SCENE_H
 
 #include "shapes.h"
 #include "object.h"
+#include "texture.h"
 #include "fbo.h"
 
-enum ObjectIds
-{
+enum ObjectIds {
     nullId = 0,
     skyId = 1,
     seaId = 2,
@@ -36,29 +34,32 @@ enum ObjectIds
 
 class Shader;
 
+
 class Scene
 {
 public:
-    GLFWwindow *window;
+    GLFWwindow* window;
+
+    float lastTime;
 
     // @@ Declare interactive viewing variables here. (spin, tilt, ry, front back, ...)
-    float spin, tilt, rx, ry, tx, ty, zoom, front, back;
+    float spin, tilt;
+    float tx, ty, zoom;
+    float rx, ry;
+    float front, back;
 
-    // Game-like navigation
     glm::vec3 eye;
     float speed;
 
-    bool w_down;
-    bool a_down;
-    bool s_down;
-    bool d_down;
-
+    bool w_down, a_down, s_down, d_down;
     bool transformationMode;
 
     // Light parameters
     float lightSpin, lightTilt, lightDist;
-    glm::vec3 lightPos, lightVal, lightAmb;
+    glm::vec3 lightPos, lightColor, ambient;
     // @@ Perhaps declare additional scene lighting values here. (lightVal, lightAmb)
+
+
 
     int mode; // Extra mode indicator hooked up to number keys and sent to shader
 
@@ -69,19 +70,25 @@ public:
     glm::mat4 WorldProj, WorldView, WorldInverse;
 
     // All objects in the scene are children of this single root object.
-    Object *objectRoot;
-    Object *central, *anim, *room, *floor, *teapot, *podium, *sky,
-        *ground, *sea, *spheres, *leftFrame, *rightFrame;
+    Object* objectRoot;
+    Object* central, * anim, * room, * floor, * teapot, * podium, * sky,
+        * ground, * sea, * spheres, * leftFrame, * rightFrame;
 
-    std::vector<Object *> animated;
-    ProceduralGround *proceduralGround;
+    std::vector<Object*> animated;
+    ProceduralGround* proceduralground;
+    Texture* skyTexture;
 
     // Shader programs
-    ShaderProgram *lightingProgram;
+    ShaderProgram* lightingProgram;
     // @@ Declare additional shaders if necessary
-    ShaderProgram *shadowProgram;
+    ShaderProgram* shadowProgram;
+    ShaderProgram* reflectionProgram;
+
     FBO* shadowFBO;
-    const int SHADOW_MAP_SIZE = 4096;
+    FBO* upperReflectionFBO;
+    FBO* lowerReflectionFBO;
+
+
 
     // Options menu stuff
     bool show_demo_window;
@@ -90,5 +97,6 @@ public:
     void BuildTransforms();
     void DrawMenu();
     void DrawScene();
+
+    glm::mat4 LookAt(glm::vec3 pos, glm::vec3 lookDir, glm::vec3 upDir);
 };
-#endif // SCENE_H

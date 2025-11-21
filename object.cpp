@@ -31,16 +31,16 @@ using namespace gl;
 
 
 Object::Object(Shape* _shape, const int _objectId,
-               const glm::vec3 _diffuseColor, const glm::vec3 _specularColor, const float _shininess, Texture* _texture, Texture* _normalMap)
-	: diffuseColor(_diffuseColor), specularColor(_specularColor), shininess(_shininess), texture(_texture),
-	  normalMap(_normalMap),
-	  shape(_shape), objectId(_objectId), drawMe(true)
-
+    const glm::vec3 _d, const glm::vec3 _s, const float _n, const bool _isReflective,
+    Texture* texture, Texture* normalMap)
+	: shape(_shape), objectId(_objectId), drawMe(true), diffuseColor(_d),
+	  specularColor(_s), shininess(_n),
+	  isReflective(_isReflective), skyboxReflectionStrength(0), texture(texture), normalMap(normalMap)
 {
 }
 
 
-void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
+void Object::Draw(ShaderProgram* program, glm::mat4& objectTr, bool renderReflective)
 {
     CHECKERROR;
     // @@ The object specific parameters (uniform variables) used by
@@ -49,7 +49,7 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
 
     // @@ Textures, being uniform sampler2d variables in the shader,
     // are also set here.  Call texture->Bind in texture.cpp to do so.
-    
+
     // Inform the shader of the surface values Kd, Ks, and alpha.
     int loc = glGetUniformLocation(program->programId, "diffuse");
     glUniform3fv(loc, 1, &diffuseColor[0]);
@@ -60,8 +60,11 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
     loc = glGetUniformLocation(program->programId, "shininess");
     glUniform1f(loc, shininess);
 
-	loc = glGetUniformLocation(program->programId, "reflectionStrength");
-    glUniform1f(loc, reflectionStrength);
+    loc = glGetUniformLocation(program->programId, "isReflective");
+    glUniform1f(loc, isReflective);
+
+    loc = glGetUniformLocation(program->programId, "skyboxReflectionStrength");
+    glUniform1f(loc, skyboxReflectionStrength);
 
     // Inform the shader of which object is being drawn so it can make
     // object specific decisions.
@@ -73,7 +76,7 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
     // normals, is calculated and passed to the shader here.
     loc = glGetUniformLocation(program->programId, "ModelTr");
     glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(objectTr));
-    
+
     glm::mat4 inv = glm::inverse(objectTr);
     loc = glGetUniformLocation(program->programId, "NormalTr");
     glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(inv));
@@ -83,55 +86,38 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr)
     // the shader program of the texture-unit number.  See
     // Texture::Bind for the 4 lines of code to do exactly that.
 
-    // Bind the texture to texture unit 0
-    if (texture != NULL) {
-        texture->BindTexture(0, program->programId, "textureImage");
-        loc = glGetUniformLocation(program->programId, "hasTexture");
-        glUniform1i(loc, 1);
-    }
-    else {
-        loc = glGetUniformLocation(program->programId, "hasTexture");
-        glUniform1i(loc, 0);
-    }
+    glUniform1i(glGetUniformLocation(program->programId, "useTex"), texture != nullptr);
+    glUniform1i(glGetUniformLocation(program->programId, "useNormal"), normalMap != nullptr);
 
-    // Bind the normal map to texture unit 1
-    if (normalMap != NULL) {
+    if (texture != nullptr)
+        texture->BindTexture(0, program->programId, "tex");
+    if (normalMap != nullptr)
         normalMap->BindTexture(1, program->programId, "normalMap");
-        loc = glGetUniformLocation(program->programId, "hasNormalMap");
-        glUniform1i(loc, 1);
-    }
-    else {
-        loc = glGetUniformLocation(program->programId, "hasNormalMap");
-        glUniform1i(loc, 0);
-    }
+
+    bool drawObject = drawMe && (!isReflective || (isReflective && renderReflective));
 
     // Draw this object
     CHECKERROR;
     if (shape)
-        if (drawMe) 
+        if (drawObject)
             shape->DrawVAO();
     CHECKERROR;
 
-    // Unbind textures after drawing
-    if (texture != NULL)
-    {
+    if (texture != nullptr)
         texture->UnbindTexture(0);
-    }
-    if (normalMap != NULL)
-    {
+    if (normalMap != nullptr)
         normalMap->UnbindTexture(1);
-    }
-
 
     CHECKERROR;
     // Recursively draw each sub-objects, each with its own transformation.
-    if (drawMe)
-        for (int i=0;  i<instances.size();  i++) {
+    if (drawObject)
+        for (int i = 0; i < instances.size(); i++) {
             CHECKERROR;
-            glm::mat4 itr = objectTr*instances[i].second*animTr;
+            glm::mat4 itr = objectTr * instances[i].second * animTr;
             CHECKERROR;
-            instances[i].first->Draw(program, itr);
-            CHECKERROR; }
-    
+            instances[i].first->Draw(program, itr, renderReflective);
+            CHECKERROR;
+        }
+
     CHECKERROR;
 }
