@@ -19,7 +19,7 @@ out vec4 shadowCoord;
 
 uniform vec3 lightPos;
 uniform vec3 centerOfReflection;
-uniform float hemiSign;
+uniform float hemisphereSignNotation;
 
 void main()
 {     
@@ -36,12 +36,12 @@ void main()
     float b = d.y;
     float c = d.z;
 
-    // 1 +- c branch with hemiSign
-    float denom = 1.0 + hemiSign * c;
+    // 1 +- c branch with hemisphereSignNotation
+    float denom = 1.0 + hemisphereSignNotation * c;
 
     float clipX = a / denom;
     float clipY = b / denom;
-    float clipZ = hemiSign * c * lenR / 1000.0 - 1.f;
+    float clipZ = hemisphereSignNotation * c * lenR / 1000.0 - 1.f;
 
     // projection position
     gl_Position = vec4(clipX, clipY, clipZ, 1.0);       

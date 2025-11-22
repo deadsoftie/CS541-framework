@@ -136,8 +136,7 @@
   <ItemGroup>
     <None Include="total.frag" />
     <None Include="total.vert" />
-    <None Include="lighting.frag" />
-    <None Include="lighting.vert" />
+    <None Include="template_functions.frag" />
     <None Include="reflection.frag" />
     <None Include="reflection.vert" />
     <None Include="shadow.frag" />

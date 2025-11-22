@@ -9,9 +9,7 @@
 // Methods consist of a constructor, and a Draw procedure, and an
 // append for building hierarchies of objects.
 
-#include "math.h"
-#include <fstream>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
@@ -42,7 +40,7 @@ Object::Object(Shape* _shape, const int _objectId,
 
 void Object::Draw(ShaderProgram* program, glm::mat4& objectTr, bool renderReflective)
 {
-    CHECKERROR;
+    CHECKERROR
     // @@ The object specific parameters (uniform variables) used by
     // the shader are set here.  Scene specific parameters are set in
     // the DrawScene procedure in scene.cpp
@@ -94,30 +92,31 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr, bool renderReflec
     if (normalMap != nullptr)
         normalMap->BindTexture(1, program->programId, "normalMap");
 
-    bool drawObject = drawMe && (!isReflective || (isReflective && renderReflective));
+    const bool drawObject = drawMe && (!isReflective || (isReflective && renderReflective));
 
     // Draw this object
-    CHECKERROR;
+    CHECKERROR
     if (shape)
         if (drawObject)
             shape->DrawVAO();
-    CHECKERROR;
+    CHECKERROR
 
     if (texture != nullptr)
         texture->UnbindTexture(0);
     if (normalMap != nullptr)
         normalMap->UnbindTexture(1);
 
-    CHECKERROR;
+    CHECKERROR
     // Recursively draw each sub-objects, each with its own transformation.
     if (drawObject)
-        for (int i = 0; i < instances.size(); i++) {
-            CHECKERROR;
-            glm::mat4 itr = objectTr * instances[i].second * animTr;
-            CHECKERROR;
-            instances[i].first->Draw(program, itr, renderReflective);
-            CHECKERROR;
+        for (auto& instance : instances)
+        {
+            CHECKERROR
+            glm::mat4 itr = objectTr * instance.second * animTr;
+            CHECKERROR
+            instance.first->Draw(program, itr, renderReflective);
+            CHECKERROR
         }
 
-    CHECKERROR;
+    CHECKERROR
 }

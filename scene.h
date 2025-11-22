@@ -75,7 +75,7 @@ public:
         * ground, * sea, * spheres, * leftFrame, * rightFrame;
 
     std::vector<Object*> animated;
-    ProceduralGround* proceduralground;
+    ProceduralGround* proceduralGround;
     Texture* skyTexture;
 
     // Shader programs
