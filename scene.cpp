@@ -149,8 +149,8 @@ void Scene::InitializeScene()
 	glEnable(GL_DEPTH_TEST);
 	CHECKERROR
 
-		// @@ Initialize interactive viewing variables here. (spin, tilt, ry, front back, ...)
-		spin = 0.0f;
+	// @@ Initialize interactive viewing variables here. (spin, tilt, ry, front back, ...)
+	spin = 0.0f;
 	tilt = 30.0f;
 	tx = 0.0f;
 	ty = 0.0f;
@@ -178,7 +178,7 @@ void Scene::InitializeScene()
 	ambient = { 0.1f, 0.1f, 0.1f };
 
 	CHECKERROR
-		objectRoot = new Object(NULL, nullId);
+	objectRoot = new Object(NULL, nullId);
 
 	// Enable OpenGL depth-testing
 	glEnable(GL_DEPTH_TEST);
@@ -432,10 +432,10 @@ void Scene::DrawScene()
 	glViewport(0, 0, width, height);
 
 	CHECKERROR
-		// Calculate the light's position from lightSpin, lightTilt, lightDist
-		lightPos = glm::vec3(lightDist * cos(lightSpin * rad) * sin(lightTilt * rad),
-			lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
-			lightDist * cos(lightTilt * rad));
+	// Calculate the light's position from lightSpin, lightTilt, lightDist
+	lightPos = glm::vec3(lightDist * cos(lightSpin * rad) * sin(lightTilt * rad),
+		lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
+		lightDist * cos(lightTilt * rad));
 
 	// Update position of any continuously animating objects
 	const double atime = 360.0 * glfwGetTime() / 36;
@@ -461,7 +461,7 @@ void Scene::DrawScene()
 	////////////////////////////////////////////////////////////////////////////////
 
 	CHECKERROR
-		int loc, programId;
+	int loc, programId;
 
 	////////////////////////////////////////////////////////////////////////////////
 	// PASS 1: Shadow Map Generation (from light's POV)
@@ -510,11 +510,11 @@ void Scene::DrawScene()
 
 	// Draw all geometry from light's POV (this creates the shadow map)
 	CHECKERROR
-		objectRoot->Draw(shadowProgram, Identity, true);
+	objectRoot->Draw(shadowProgram, Identity, true);
 	CHECKERROR
 
-		// Disable culling
-		glDisable(GL_CULL_FACE);
+	// Disable culling
+	glDisable(GL_CULL_FACE);
 
 	// Unbind FBO (back to default framebuffer)
 	FBO::UnbindFBO();
@@ -567,12 +567,12 @@ void Scene::DrawScene()
 
 	CHECKERROR
 
-		// Draw all objects (This recursively traverses the object hierarchy.)
-		CHECKERROR
-		objectRoot->Draw(reflectionProgram, Identity, false);
+	// Draw all objects (This recursively traverses the object hierarchy.)
+	CHECKERROR
+	objectRoot->Draw(reflectionProgram, Identity, false);
 	CHECKERROR
 
-		sky->texture->UnbindTexture(2);
+	sky->texture->UnbindTexture(2);
 	FBO::UnbindTexture(3);
 
 	FBO::UnbindFBO();
@@ -621,12 +621,12 @@ void Scene::DrawScene()
 
 	CHECKERROR
 
-		// Draw all objects (This recursively traverses the object hierarchy.)
-		CHECKERROR
-		objectRoot->Draw(reflectionProgram, Identity, false);
+	// Draw all objects (This recursively traverses the object hierarchy.)
+	CHECKERROR
+	objectRoot->Draw(reflectionProgram, Identity, false);
 	CHECKERROR
 
-		sky->texture->UnbindTexture(2);
+	sky->texture->UnbindTexture(2);
 	FBO::UnbindTexture(3);
 
 	FBO::UnbindFBO();
@@ -675,8 +675,8 @@ void Scene::DrawScene()
 
 	CHECKERROR
 
-		CHECKERROR
-		objectRoot->Draw(lightingProgram, Identity, true);
+	CHECKERROR
+	objectRoot->Draw(lightingProgram, Identity, true);
 	CHECKERROR
 
 		sky->texture->UnbindTexture(2);
