@@ -1,9 +1,9 @@
 /////////////////////////////////////////////////////////////////////////
-// Fragment Shader - Reflection Pass with PBR Lighting and IBL
+// Fragment Shader - Reflection Pass with PBR Lighting
 //
 // Implements environment reflections, skybox rendering, and shadow-mapped
-// physically-based lighting with image-based lighting support. This shader
-// is used to render the dual paraboloid reflection maps.
+// physically-based lighting. Handles special cases for different object
+// types including procedural textures and framed images.
 //
 // Copyright 2013 DigiPen Institute of Technology
 ////////////////////////////////////////////////////////////////////////
@@ -45,12 +45,10 @@ uniform sampler2D tex;
 uniform sampler2D normalMap;
 uniform sampler2D skyTexture;
 uniform sampler2D shadowMap;
-uniform sampler2D irradianceMap;  // Pre-computed irradiance map
 
 // Function declarations (implementations defined in separate shader library)
 vec3 ComputeBRDF(vec3 N, vec3 V, vec3 L, vec3 Ks, vec3 Kd, vec3 Ia, vec3 Il, float a, float shadow);
 vec3 SampleSkybox(vec3 reference, sampler2D skyTexture);
-vec3 SampleIrradianceMap(vec3 N, sampler2D irradianceMap);
 vec3 ApplyNormalMapping(vec3 N, vec2 uv, vec3 tanVec, sampler2D normalMap);
 vec2 SetUV(int objectId, vec2 uv);
 vec3 GenerateCheckerboardPattern(vec2 uv);
@@ -109,7 +107,8 @@ void main()
         Kd = texture(tex, uv).rgb;
 
     // Compute reflection vector for environment reflections
-    vec3 R = reflect(-V, N);
+    // Formula: R = 2(N·V)N - V, negated for proper reflection direction
+    vec3 R = -(2 * dot(V, N) * N - V);
     vec3 reflection = SampleSkybox(R, skyTexture);
     
     // Special case: Sea surface uses pure reflection (mirror-like)
@@ -122,21 +121,8 @@ void main()
     // Compute shadow factor: 0.0 if in shadow, 1.0 if fully lit
     float shadowFactor = TestShadowOcclusion(shadowCoord, shadowMap) ? 0.0 : 1.0;
 
-    // ========================================================================
-    // IMAGE-BASED LIGHTING (IBL) FOR REFLECTION MAPS
-    // ========================================================================
-    
-    // Sample irradiance map for diffuse IBL contribution
-    vec3 irradiance = SampleIrradianceMap(N, irradianceMap);
-    
-    // Diffuse IBL component
-    vec3 diffuseIBL = irradiance * Kd;
-    
-    // Compute direct lighting using Cook-Torrance BRDF
-    vec3 directLight = ComputeBRDF(N, V, L, Ks, Kd, vec3(0.0), Il, a, shadowFactor);
-    
-    // Combine direct lighting with diffuse IBL
-    vec3 lightColor = directLight + diffuseIBL;
+    // Compute physically-based lighting using Cook-Torrance BRDF
+    vec3 lightColor = ComputeBRDF(N, V, L, Ks, Kd, Ia, Il, a, shadowFactor);
     
     // Blend lighting with environment reflection based on material reflectivity
     // Reflective objects mix 50% lighting with 50% reflection

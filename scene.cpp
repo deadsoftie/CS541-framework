@@ -272,11 +272,11 @@ void Scene::InitializeScene()
 
 	Texture* waterRippleNormalMap = new Texture("textures/ripples_normalmap.png");
 
-	skyTexture = new Texture("skys/Tropical_Beach_8k.jpg");
+	Texture* skyTexture = new Texture("skys/Tropical_Beach_8k.jpg");
 
 	HDRTexture* hdrSkybox = new HDRTexture("skys/Alexs_Apt_2k.hdr");
 
-	irradianceMap = new HDRTexture("skys/Alexs_Apt_2k.irr.hdr");
+	HDRTexture* irradianceMap = new HDRTexture("skys/Alexs_Apt_2k.irr.hdr");
 
 	// @@ To change an object's surface parameters (Kd, Ks, or alpha),
 	// modify the following lines.
@@ -418,8 +418,7 @@ void Scene::DrawScene()
 	const double currTime = glfwGetTime();
 	const double time_since_last_refresh = currTime - prevTime;
 	prevTime = currTime;
-	const float step = speed * static_cast<float>(time_since_last_refresh);
-
+	const float step = speed * static_cast<float>(time_since_last_refresh); // Frame-independent movement
 	if (w_down)
 		eye += step * glm::vec3(sin(spin * rad), cos(spin * rad), 0.0);
 	if (a_down)
@@ -429,43 +428,67 @@ void Scene::DrawScene()
 	if (d_down)
 		eye += step * glm::vec3(cos(spin * rad), -sin(spin * rad), 0.0);
 
+	// Constant eye height relative to the ground
 	constexpr float eyeHeight = 2.0f;
 	const float groundZ = proceduralGround->HeightAt(eye.x, eye.y);
 	eye.z = groundZ + eyeHeight;
 
+	// Set the viewport
 	glfwGetFramebufferSize(window, &width, &height);
 	glViewport(0, 0, width, height);
 
 	CHECKERROR
+	// Calculate the light's position from lightSpin, lightTilt, lightDist
+	lightPos = glm::vec3(lightDist * cos(lightSpin * rad) * sin(lightTilt * rad),
+		lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
+		lightDist * cos(lightTilt * rad));
 
-		lightPos = glm::vec3(lightDist * cos(lightSpin * rad) * sin(lightTilt * rad),
-			lightDist * sin(lightSpin * rad) * sin(lightTilt * rad),
-			lightDist * cos(lightTilt * rad));
-
+	// Update position of any continuously animating objects
 	const double atime = 360.0 * glfwGetTime() / 36;
 	for (auto m = animated.begin(); m < animated.end(); ++m)
 		(*m)->animTr = Rotate(2, static_cast<float>(atime));
 
 	BuildTransforms();
+
+	// The lighting algorithm needs the inverse of the WorldView matrix
 	WorldInverse = glm::inverse(WorldView);
 
-	CHECKERROR
-		int loc, programId;
 
 	////////////////////////////////////////////////////////////////////////////////
-	// PASS 1: Shadow Map Generation
+	// Anatomy of a pass:
+	//   Choose a shader  (create the shader in InitializeScene above)
+	//   Choose and FBO/Render-Target (if needed; create the FBO in InitializeScene above)
+	//   Set the viewport (to the pixel size of the screen or FBO)
+	//   Clear the screen.
+	//   Set the uniform variables required by the shader
+	//   Draw the geometry
+	//   Unset the FBO (if one was used)
+	//   Unset the shader
+	////////////////////////////////////////////////////////////////////////////////
+
+	CHECKERROR
+	int loc, programId;
+
+	////////////////////////////////////////////////////////////////////////////////
+	// PASS 1: Shadow Map Generation (from light's POV)
 	////////////////////////////////////////////////////////////////////////////////
 
 	shadowProgram->UseShader();
 	programId = shadowProgram->programId;
+
+	// Bind the FBO to render to shadow map texture
 	shadowFBO->BindFBO();
 
+	// Set viewport to shadow map size
 	glViewport(0, 0, shadowFBO->width, shadowFBO->height);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glm::vec3 lightLookAt = glm::vec3(0.0f, 0.0f, 0.0f);
+	// Transformations from light's point of view
+	glm::vec3 lightLookAt = glm::vec3(0.0f, 0.0f, 0.0f);  // Light looks at origin
 	glm::vec3 upDir = glm::vec3(0.0f, 0.0f, 1.0f);
-	glm::mat4 lightViewMatrix = glm::lookAt(lightPos, lightLookAt, upDir);
+
+	// Light View-Projection Matrix
+	glm::mat4 lightViewMatrix = glm::lookAt(lightPos, lightLookAt, upDir);  // Light looks at origin
 
 	float lightFOV = 60.0f * rad;
 	float lightAspect = 1.0f;
@@ -473,32 +496,48 @@ void Scene::DrawScene()
 	float lightFar = 200.0f;
 
 	glm::mat4 lightPerspectiveMatrix = Perspective(lightFOV, lightAspect, lightNear, lightFar);
+
+	// Combined light view-projection matrix (P_L * V_L)
 	glm::mat4 lightViewProj = lightPerspectiveMatrix * lightViewMatrix;
+
+	// Shadow matrix: B * P_L * V_L
+	// B transforms from [-1,1] NDC space to [0,1] texture space
+	// B = Translate(0.5, 0.5, 0.5) * Scale(0.5, 0.5, 0.5)
 	glm::mat4 bias = Translate(0.5, 0.5, 0.5) * Scale(0.5, 0.5, 0.5);
 	glm::mat4 shadowMatrix = bias * lightViewProj;
 
+	// Send combined matrix to shadow shader
 	loc = glGetUniformLocation(programId, "LightViewProj");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(lightViewProj));
 
+	// Enable front-face culling to reduce shadow acne
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 
+	// Draw all geometry from light's POV (this creates the shadow map)
 	CHECKERROR
-		objectRoot->Draw(shadowProgram, Identity, true);
+	objectRoot->Draw(shadowProgram, Identity, true);
 	CHECKERROR
 
+	// Disable culling
 	glDisable(GL_CULL_FACE);
+
+	// Unbind FBO (back to default framebuffer)
 	FBO::UnbindFBO();
+
+	// Unuse shadow shader
 	shadowProgram->UnuseShader();
 
 	////////////////////////////////////////////////////////////////////////////////
 	// PASS 2A: Upper Reflection FBO
 	////////////////////////////////////////////////////////////////////////////////
 
+	// Choose the reflection shader
 	reflectionProgram->UseShader();
 	programId = reflectionProgram->programId;
 	upperReflectionFBO->BindFBO();
 
+	// Set the viewport, and clear the screen
 	glViewport(0, 0, upperReflectionFBO->width, upperReflectionFBO->height);
 	glClearColor(0, 0, 1, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -509,6 +548,8 @@ void Scene::DrawScene()
 	glm::vec3 teaPotPos = glm::vec3(0, 0, 1.5);
 
 	loc = glGetUniformLocation(programId, "centerOfReflection");
+
+	// Passing in the TeaPot as the center of reflection, can be changed if needed
 	glUniform3fv(loc, 1, &(teaPotPos[0]));
 
 	loc = glGetUniformLocation(programId, "hemisphereSignNotation");
@@ -524,17 +565,21 @@ void Scene::DrawScene()
 	loc = glGetUniformLocation(programId, "ShadowMatrix");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
+	// Bind skybox texture
 	sky->texture->BindTexture(2, programId, "skyTexture");
+
+	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");
-	sky->texture->BindTexture(6, programId, "irradianceMap");
 
 	CHECKERROR
-		objectRoot->Draw(reflectionProgram, Identity, false);
+
+	// Draw all objects (This recursively traverses the object hierarchy.)
+	CHECKERROR
+	objectRoot->Draw(reflectionProgram, Identity, false);
 	CHECKERROR
 
-	Texture::UnbindTexture(2);
+	sky->texture->UnbindTexture(2);
 	FBO::UnbindTexture(3);
-	Texture::UnbindTexture(6);
 
 	FBO::UnbindFBO();
 	reflectionProgram->UnuseShader();
@@ -543,10 +588,12 @@ void Scene::DrawScene()
 	// PASS 2B: Lower Reflection FBO
 	////////////////////////////////////////////////////////////////////////////////
 
+	// Choose the reflection shader
 	reflectionProgram->UseShader();
 	programId = reflectionProgram->programId;
 	lowerReflectionFBO->BindFBO();
 
+	// Set the viewport, and clear the screen
 	glViewport(0, 0, lowerReflectionFBO->width, lowerReflectionFBO->height);
 	glClearColor(1, 0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -555,6 +602,8 @@ void Scene::DrawScene()
 	glUniform3fv(loc, 1, &(lightPos[0]));
 
 	loc = glGetUniformLocation(programId, "centerOfReflection");
+
+	// Passing in the TeaPot as the center of reflection, can be changed if needed
 	glUniform3fv(loc, 1, &(teaPotPos[0]));
 
 	loc = glGetUniformLocation(programId, "hemisphereSignNotation");
@@ -570,17 +619,21 @@ void Scene::DrawScene()
 	loc = glGetUniformLocation(programId, "ShadowMatrix");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
+	// Bind skybox texture
 	sky->texture->BindTexture(2, programId, "skyTexture");
+
+	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");
-	sky->texture->BindTexture(6, programId, "irradianceMap");
 
 	CHECKERROR
-		objectRoot->Draw(reflectionProgram, Identity, false);
+
+	// Draw all objects (This recursively traverses the object hierarchy.)
+	CHECKERROR
+	objectRoot->Draw(reflectionProgram, Identity, false);
 	CHECKERROR
 
-	Texture::UnbindTexture(2);
+	sky->texture->UnbindTexture(2);
 	FBO::UnbindTexture(3);
-	Texture::UnbindTexture(6);
 
 	FBO::UnbindFBO();
 	reflectionProgram->UnuseShader();
@@ -589,9 +642,11 @@ void Scene::DrawScene()
 	// PASS 3: LIGHTING PASS + TOTAL CALCULATION
 	////////////////////////////////////////////////////////////////////////////////
 
+	// Choose the lighting shader
 	lightingProgram->UseShader();
 	programId = lightingProgram->programId;
 
+	// Set the viewport, and clear the screen
 	glViewport(0, 0, width, height);
 	glClearColor(0.5, 0.5, 0.5, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -614,20 +669,33 @@ void Scene::DrawScene()
 	loc = glGetUniformLocation(programId, "ShadowMatrix");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
+	// Bind skybox texture
+	//sky->texture->BindTexture(2, programId, "skyTexture");
+
+	
+
+	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");
+
+	// Bind Reflection Maps
 	upperReflectionFBO->BindTexture(4, programId, "upperReflectionTexture");
 	lowerReflectionFBO->BindTexture(5, programId, "lowerReflectionTexture");
-	sky->texture->BindTexture(6, programId, "irradianceMap");
 
 	CHECKERROR
-		objectRoot->Draw(lightingProgram, Identity, true);
+
+	CHECKERROR
+	objectRoot->Draw(lightingProgram, Identity, true);
 	CHECKERROR
 
-	Texture::UnbindTexture(2);
+		sky->texture->UnbindTexture(2);
 	FBO::UnbindTexture(3);
 	FBO::UnbindTexture(4);
 	FBO::UnbindTexture(5);
-	Texture::UnbindTexture(6);
 
+	// Turn off the shader
 	lightingProgram->UnuseShader();
+
+	////////////////////////////////////////////////////////////////////////////////
+	// End of Lighting pass
+	////////////////////////////////////////////////////////////////////////////////
 }

@@ -78,8 +78,6 @@ public:
     ProceduralGround* proceduralGround;
     Texture* skyTexture;
 
-    HDRTexture* irradianceMap;
-
     // Shader programs
     ShaderProgram* lightingProgram;
     // @@ Declare additional shaders if necessary
