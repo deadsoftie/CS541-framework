@@ -274,6 +274,10 @@ void Scene::InitializeScene()
 
 	Texture* skyTexture = new Texture("skys/Tropical_Beach_8k.jpg");
 
+	HDRTexture* hdrSkybox = new HDRTexture("skys/Alexs_Apt_2k.hdr");
+
+	HDRTexture* irradianceMap = new HDRTexture("skys/Alexs_Apt_2k.irr.hdr");
+
 	// @@ To change an object's surface parameters (Kd, Ks, or alpha),
 	// modify the following lines.
 
@@ -292,6 +296,8 @@ void Scene::InitializeScene()
 	leftFrame = FramedPicture(Identity, lPicId, BoxPolygons, QuadPolygons, NULL);
 	rightFrame = FramedPicture(Identity, rPicId, BoxPolygons, QuadPolygons, rightPicTexture);
 	spheres = SphereOfSpheres(SpherePolygons);
+
+	exposure = 1.0f;
 
 #ifdef REFL
 	spheres->drawMe = true;
@@ -664,7 +670,9 @@ void Scene::DrawScene()
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
 	// Bind skybox texture
-	sky->texture->BindTexture(2, programId, "skyTexture");
+	//sky->texture->BindTexture(2, programId, "skyTexture");
+
+	
 
 	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");

@@ -20,11 +20,17 @@ class Texture
     int width, height, depth;
     unsigned char* image;
     Texture();
-    Texture(const std::string &filename);
+    Texture(const std::string & path);
 
-    void BindTexture(const int unit, const int programId, const std::string& name);
-    void UnbindTexture(const int unit);
+    void BindTexture(const int unit, const int programId, const std::string& name) const;
+    static void UnbindTexture(const int unit);
 };
 
+class HDRTexture : Texture
+{
+public:
+    HDRTexture();
+    HDRTexture(const std::string& path);
+};
 
 #endif

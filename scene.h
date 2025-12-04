@@ -59,7 +59,7 @@ public:
     glm::vec3 lightPos, lightColor, ambient;
     // @@ Perhaps declare additional scene lighting values here. (lightVal, lightAmb)
 
-
+    float exposure; // Exposure control for tone mapping
 
     int mode; // Extra mode indicator hooked up to number keys and sent to shader
 
