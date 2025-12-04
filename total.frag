@@ -1,9 +1,9 @@
 /////////////////////////////////////////////////////////////////////////
-// Fragment Shader - Lighting Pass with Dual Paraboloid Reflections
+// Fragment Shader - Lighting Pass with IBL and Dual Paraboloid Reflections
 //
-// Implements physically-based lighting with dual paraboloid environment
-// mapping for reflections. This technique provides efficient real-time
-// reflections using only two hemisphere maps instead of a full cubemap.
+// Implements physically-based lighting with image-based lighting (IBL)
+// for both diffuse and specular components, plus dual paraboloid 
+// environment mapping for reflections.
 //
 ////////////////////////////////////////////////////////////////////////
 #version 330
@@ -45,10 +45,12 @@ uniform sampler2D normalMap;
 uniform sampler2D skyTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D upperReflectionTexture, lowerReflectionTexture;
+uniform sampler2D irradianceMap;
 
 // Function declarations (implementations defined in separate shader library)
 vec3 ComputeBRDF(vec3 N, vec3 V, vec3 L, vec3 Ks, vec3 Kd, vec3 Ia, vec3 Il, float a, float shadow);
 vec3 SampleSkybox(vec3 reference, sampler2D skyTexture);
+vec3 SampleIrradianceMap(vec3 N, sampler2D irradianceMap);
 vec3 ApplyNormalMapping(vec3 N, vec2 uv, vec3 tanVec, sampler2D normalMap);
 vec2 SetUV(int objectId, vec2 uv);
 vec3 GenerateCheckerboardPattern(vec2 uv);
@@ -139,7 +141,7 @@ void main()
     // Special case: Sea surface uses direct skybox reflection
     if(objectId == seaId)
     {
-        vec3 R = reflect(V, N);
+        vec3 R = reflect(-V, N);
         vec3 reflection = SampleSkybox(R, skyTexture);
         FragColor.xyz = reflection;
         return;
@@ -148,28 +150,48 @@ void main()
     // Compute shadow factor: 0.0 if in shadow, 1.0 if fully lit
     float shadowFactor = TestShadowOcclusion(shadowCoord, shadowMap) ? 0.0 : 1.0;
 
-    // Compute physically-based lighting using Cook-Torrance BRDF
-    vec3 lightColor = ComputeBRDF(N, V, L, Ks, Kd, Ia, Il, a, shadowFactor);
+    // ========================================================================
+    // IMAGE-BASED LIGHTING (IBL) COMPUTATION
+    // ========================================================================
     
-    // Early exit: Non-reflective objects only need direct lighting
+    // Sample irradiance map for diffuse IBL contribution
+    vec3 irradiance = SampleIrradianceMap(N, irradianceMap);
+    
+    // Diffuse IBL: irradiance * Kd (Lambertian BRDF already baked into irradiance)
+    vec3 diffuseIBL = irradiance * Kd;
+    
+    // Direct lighting using Cook-Torrance BRDF
+    vec3 directLight = ComputeBRDF(N, V, L, Ks, Kd, vec3(0.0), Il, a, shadowFactor);
+    
+    // Combine direct lighting with IBL diffuse (ambient is now from IBL)
+    vec3 lightColor = directLight + diffuseIBL;
+    
+    // Early exit: Non-reflective objects only need direct + diffuse IBL
     if(!isReflective)
     {
         FragColor.xyz = lightColor;
         return;
     }
     
-    // Reflective objects: blend lighting with environment reflections
-    // Boost specular by 5x to enhance reflective appearance
-    Ks *= 5.0;
+    // ========================================================================
+    // REFLECTIVE OBJECTS: Add specular IBL from dual paraboloid maps
+    // ========================================================================
+    
+    // Boost specular for reflective appearance
+    vec3 enhancedKs = Ks * 5.0;
     
     // Compute reflection vector (pointing from surface into environment)
     vec3 R = reflect(-V, N);
     
-    // Sample dual paraboloid reflection maps
-    vec3 reflection = ReflectionCalculation(R);
+    // Sample dual paraboloid reflection maps for specular IBL
+    vec3 specularIBL = ReflectionCalculation(R);
     
-    // Blend direct lighting with reflection based on specular reflectance
-    // Higher Ks values produce stronger reflections
-    vec3 finalColor = mix(lightColor, reflection, Ks);
+    // Fresnel factor for view-dependent reflections (Schlick approximation)
+    float VdotN = max(dot(V, N), 0.0);
+    vec3 F = enhancedKs + (1.0 - enhancedKs) * pow(1.0 - VdotN, 5.0);
+    
+    // Blend direct lighting with specular IBL based on Fresnel
+    vec3 finalColor = lightColor + specularIBL * F;
+    
     FragColor.xyz = finalColor;
 }

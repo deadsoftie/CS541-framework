@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// Pixel shader for lighting
+// Pixel shader for lighting with IBL support
 ////////////////////////////////////////////////////////////////////////
 #version 330
 
@@ -87,6 +87,22 @@ vec3 SampleSkybox(vec3 reference, sampler2D skyTexture)
 {
     vec2 uv = vec2(-atan(reference.y, reference.x) * INV_2PI, acos(reference.z) * INV_PI);
     return texture(skyTexture, uv).rgb;
+}
+
+/**
+ * SampleIrradianceMap - Samples the pre-computed irradiance map
+ * 
+ * Samples the irradiance map for a given surface normal to get
+ * the incoming diffuse lighting from all directions.
+ *
+ * @param N              - Surface normal (normalized)
+ * @param irradianceMap  - Pre-computed irradiance map sampler
+ * @return               - Diffuse irradiance (RGB)
+ */
+vec3 SampleIrradianceMap(vec3 N, sampler2D irradianceMap)
+{
+    vec2 uv = vec2(-atan(N.y, N.x) * INV_2PI, acos(N.z) * INV_PI);
+    return texture(irradianceMap, uv).rgb;
 }
 
 /**
