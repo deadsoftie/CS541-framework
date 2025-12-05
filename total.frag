@@ -49,6 +49,7 @@ uniform sampler2D upperReflectionTexture, lowerReflectionTexture;
 // Function declarations (implementations defined in separate shader library)
 vec3 ComputeBRDF(vec3 N, vec3 V, vec3 L, vec3 Ks, vec3 Kd, vec3 Ia, vec3 Il, float a, float shadow);
 vec3 SampleSkybox(vec3 reference, sampler2D skyTexture);
+vec3 SampleIrradianceMap(vec3 N, sampler2D irradianceMap);
 vec3 ApplyNormalMapping(vec3 N, vec2 uv, vec3 tanVec, sampler2D normalMap);
 vec2 SetUV(int objectId, vec2 uv);
 vec3 GenerateCheckerboardPattern(vec2 uv);

@@ -90,6 +90,22 @@ vec3 SampleSkybox(vec3 reference, sampler2D skyTexture)
 }
 
 /**
+ * SampleIrradianceMap - Samples the pre-computed irradiance map
+ * 
+ * Samples the irradiance map for a given surface normal to get
+ * the incoming diffuse lighting from all directions.
+ *
+ * @param N              - Surface normal (normalized)
+ * @param irradianceMap  - Pre-computed irradiance map sampler
+ * @return               - Diffuse irradiance (RGB)
+ */
+vec3 SampleIrradianceMap(vec3 N, sampler2D irradianceMap)
+{
+    vec2 uv = vec2(-atan(N.y, N.x) * INV_2PI, acos(N.z) * INV_PI);
+    return texture(irradianceMap, uv).rgb;
+}
+
+/**
  * ApplyNormalMapping - Transforms normal map to world space using TBN matrix
  * 
  * Converts a tangent-space normal from a normal map into world space
