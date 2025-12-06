@@ -272,9 +272,9 @@ void Scene::InitializeScene()
 
 	Texture* waterRippleNormalMap = new Texture("textures/ripples_normalmap.png");
 
-	HDRTexture* hdrSkybox = new HDRTexture("skys/Alexs_Apt_2k.hdr");
+	HDRTexture* hdrSkybox = new HDRTexture("skys/Newport_Loft_Ref.hdr");
 
-	HDRTexture* irradianceMap = new HDRTexture("skys/Alexs_Apt_2k.irr.hdr");
+	HDRTexture* irradianceMap = new HDRTexture("skys/Newport_Loft_Ref.irr.hdr");
 
 	// @@ To change an object's surface parameters (Kd, Ks, or alpha),
 	// modify the following lines.
@@ -299,6 +299,8 @@ void Scene::InitializeScene()
 
 #ifdef REFL
 	spheres->drawMe = true;
+	ground->drawMe = false;
+	sea->drawMe = false;
 #else
 	spheres->drawMe = false;
 #endif
