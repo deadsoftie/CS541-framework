@@ -43,7 +43,7 @@ uniform bool useNormal;
 // Texture samplers
 uniform sampler2D tex;
 uniform sampler2D normalMap;
-uniform sampler2D skyTexture;
+uniform sampler2D hdrSkybox;
 uniform sampler2D shadowMap;
 
 // Function declarations (implementations defined in separate shader library)
@@ -77,7 +77,7 @@ void main()
     // Early exit: Skybox rendering (no lighting calculations needed)
     if(objectId == skyId)
     {
-        FragColor.xyz = SampleSkybox(V, skyTexture);
+        FragColor.xyz = SampleSkybox(V, hdrSkybox);
         return;
     }
 
@@ -110,7 +110,7 @@ void main()
     // Compute reflection vector for environment reflections
     // Formula: R = 2(N·V)N - V, negated for proper reflection direction
     vec3 R = -(2 * dot(V, N) * N - V);
-    vec3 reflection = SampleSkybox(R, skyTexture);
+    vec3 reflection = SampleSkybox(R, hdrSkybox);
     
     // Special case: Sea surface uses pure reflection (mirror-like)
     if(objectId == seaId)

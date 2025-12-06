@@ -272,8 +272,6 @@ void Scene::InitializeScene()
 
 	Texture* waterRippleNormalMap = new Texture("textures/ripples_normalmap.png");
 
-	Texture* skyTexture = new Texture("skys/Tropical_Beach_8k.jpg");
-
 	HDRTexture* hdrSkybox = new HDRTexture("skys/Alexs_Apt_2k.hdr");
 
 	HDRTexture* irradianceMap = new HDRTexture("skys/Alexs_Apt_2k.irr.hdr");
@@ -289,9 +287,9 @@ void Scene::InitializeScene()
 	teapot = new Object(TeapotPolygons, teapotId, brassColor, brightSpec, 120, true, cracksTexture);
 	teapot->skyboxReflectionStrength = 0.1f;
 	podium = new Object(BoxPolygons, boxId, glm::vec3(woodColor), brightSpec, 10, false, woodTexture, woodNormalMap);
-	sky = new Object(SpherePolygons, skyId, noSpec, noSpec, 0, false, skyTexture);
+	sky = new Object(SpherePolygons, skyId, noSpec, noSpec, 0, false, NULL, NULL, hdrSkybox, irradianceMap);
 	ground = new Object(GroundPolygons, groundId, grassColor, noSpec, 1, false, grassTexture);
-	sea = new Object(SeaPolygons, seaId, waterColor, brightSpec, 120, false, skyTexture, waterRippleNormalMap);
+	sea = new Object(SeaPolygons, seaId, waterColor, brightSpec, 120, false, NULL, waterRippleNormalMap, hdrSkybox, NULL);
 	sea->skyboxReflectionStrength = 1.0f;
 	leftFrame = FramedPicture(Identity, lPicId, BoxPolygons, QuadPolygons, NULL);
 	rightFrame = FramedPicture(Identity, rPicId, BoxPolygons, QuadPolygons, rightPicTexture);
@@ -566,7 +564,7 @@ void Scene::DrawScene()
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
 	// Bind skybox texture
-	sky->texture->BindTexture(2, programId, "skyTexture");
+	sky->hdrTexture->BindTexture(2, programId, "hdrSkybox");
 
 	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");
@@ -578,7 +576,7 @@ void Scene::DrawScene()
 	objectRoot->Draw(reflectionProgram, Identity, false);
 	CHECKERROR
 
-	sky->texture->UnbindTexture(2);
+	HDRTexture::UnbindTexture(2);
 	FBO::UnbindTexture(3);
 
 	FBO::UnbindFBO();
@@ -620,7 +618,7 @@ void Scene::DrawScene()
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
 	// Bind skybox texture
-	sky->texture->BindTexture(2, programId, "skyTexture");
+	sky->hdrTexture->BindTexture(2, programId, "hdrSkybox");
 
 	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");
@@ -632,7 +630,7 @@ void Scene::DrawScene()
 	objectRoot->Draw(reflectionProgram, Identity, false);
 	CHECKERROR
 
-	sky->texture->UnbindTexture(2);
+	HDRTexture::UnbindTexture(2);
 	FBO::UnbindTexture(3);
 
 	FBO::UnbindFBO();
@@ -665,14 +663,15 @@ void Scene::DrawScene()
 	glUniform3fv(loc, 1, &(ambient[0]));
 	loc = glGetUniformLocation(programId, "mode");
 	glUniform1i(loc, mode);
+	loc = glGetUniformLocation(programId, "exposure");
+	glUniform1f(loc, exposure);
 
 	loc = glGetUniformLocation(programId, "ShadowMatrix");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, Pntr(shadowMatrix));
 
-	// Bind skybox texture
-	//sky->texture->BindTexture(2, programId, "skyTexture");
-
-	
+	// Bind the HDR Skybox and Irradiance Map
+	sky->hdrTexture->BindTexture(2, programId, "hdrSkybox");
+	sky->irradianceMap->BindTexture(6, programId, "irradianceMap");
 
 	// Bind Shadow Map
 	shadowFBO->BindTexture(3, programId, "shadowMap");
@@ -687,11 +686,11 @@ void Scene::DrawScene()
 	objectRoot->Draw(lightingProgram, Identity, true);
 	CHECKERROR
 
-		sky->texture->UnbindTexture(2);
+	HDRTexture::UnbindTexture(2);
 	FBO::UnbindTexture(3);
 	FBO::UnbindTexture(4);
 	FBO::UnbindTexture(5);
-
+	HDRTexture::UnbindTexture(6);
 	// Turn off the shader
 	lightingProgram->UnuseShader();
 

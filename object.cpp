@@ -30,10 +30,10 @@ using namespace gl;
 
 Object::Object(Shape* _shape, const int _objectId,
     const glm::vec3 _d, const glm::vec3 _s, const float _n, const bool _isReflective,
-    Texture* texture, Texture* normalMap)
+    Texture* texture, Texture* normalMap, HDRTexture* hdrTexture, HDRTexture* irradianceMap)
 	: shape(_shape), objectId(_objectId), drawMe(true), diffuseColor(_d),
 	  specularColor(_s), shininess(_n),
-	  isReflective(_isReflective), skyboxReflectionStrength(0), texture(texture), normalMap(normalMap)
+	  isReflective(_isReflective), skyboxReflectionStrength(0), texture(texture), normalMap(normalMap), hdrTexture(hdrTexture), irradianceMap(irradianceMap)
 {
 }
 
@@ -102,9 +102,9 @@ void Object::Draw(ShaderProgram* program, glm::mat4& objectTr, bool renderReflec
     CHECKERROR
 
     if (texture != nullptr)
-        texture->UnbindTexture(0);
+	    Texture::UnbindTexture(0);
     if (normalMap != nullptr)
-        normalMap->UnbindTexture(1);
+	    Texture::UnbindTexture(1);
 
     CHECKERROR
     // Recursively draw each sub-objects, each with its own transformation.

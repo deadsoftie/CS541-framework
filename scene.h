@@ -76,7 +76,6 @@ public:
 
     std::vector<Object*> animated;
     ProceduralGround* proceduralGround;
-    Texture* skyTexture;
 
     // Shader programs
     ShaderProgram* lightingProgram;

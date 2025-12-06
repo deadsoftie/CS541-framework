@@ -26,7 +26,7 @@ class Texture
     static void UnbindTexture(const int unit);
 };
 
-class HDRTexture : Texture
+class HDRTexture : public Texture
 {
 public:
     HDRTexture();

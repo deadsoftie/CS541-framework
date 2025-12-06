@@ -38,13 +38,17 @@ public:
 	bool isReflective;					// Is object reflective or not
 	float skyboxReflectionStrength;		// Reflection strength of skybox on object
 
-	std::vector<INSTANCE> instances;	// Pairs of sub-objects and transformations 
+	std::vector<INSTANCE> instances;	// Pairs of sub-objects and transformations
+
 	Texture* texture;
 	Texture* normalMap;
 
+	HDRTexture* hdrTexture;
+	HDRTexture* irradianceMap;
+
 	Object(Shape* _shape, const int _objectId,
 		const glm::vec3 _d = glm::vec3(), const glm::vec3 _s = glm::vec3(), const float _n = 1, const bool _isReflective = false
-		, Texture* texture = nullptr, Texture* normalMap = nullptr);
+		, Texture* texture = nullptr, Texture* normalMap = nullptr, HDRTexture* hdrTexture = nullptr, HDRTexture* irradianceMap = nullptr);
 
 	// If this object is to be drawn with a texture, this is a good
 	// place to store the texture id (a small positive integer).  The

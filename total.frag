@@ -42,7 +42,7 @@ uniform bool useNormal;
 // Texture samplers
 uniform sampler2D tex;
 uniform sampler2D normalMap;
-uniform sampler2D skyTexture;
+uniform sampler2D hdrSkybox;
 uniform sampler2D shadowMap;
 uniform sampler2D upperReflectionTexture, lowerReflectionTexture;
 
@@ -55,6 +55,9 @@ vec2 SetUV(int objectId, vec2 uv);
 vec3 GenerateCheckerboardPattern(vec2 uv);
 vec3 SampleTextureWithFrame(sampler2D tex, vec2 uv);
 bool TestShadowOcclusion(vec4 shadowCoord, sampler2D shadowMap);
+vec3 ComputeIBLDiffuse(vec3 N, vec3 Kd, sampler2D irradianceMap);
+vec3 ComputeIBLSpecular(vec3 N, vec3 V, vec3 R, vec3 Ks, float a, sampler2D hdrSkybox);
+vec3 ApplyToneMapping(vec3 color, float exposure);
 
 /**
  * Samples dual paraboloid reflection maps based on reflection vector
@@ -107,7 +110,7 @@ void main()
     // Early exit: Skybox rendering (no lighting calculations needed)
     if(objectId == skyId)
     {
-        FragColor.xyz = SampleSkybox(V, skyTexture);
+        FragColor.xyz = SampleSkybox(V, hdrSkybox);
         return;
     }
 
@@ -141,7 +144,7 @@ void main()
     if(objectId == seaId)
     {
         vec3 R = reflect(V, N);
-        vec3 reflection = SampleSkybox(R, skyTexture);
+        vec3 reflection = SampleSkybox(R, hdrSkybox);
         FragColor.xyz = reflection;
         return;
     }     

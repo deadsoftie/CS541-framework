@@ -60,7 +60,7 @@ vec3 ComputeBRDF(vec3 N, vec3 V, vec3 L, vec3 Ks, vec3 Kd, vec3 Ia, vec3 Il, flo
     // Distribution term - Normalized Blinn-Phong
     float D = ((a + 2.0) / (2.0 * PI)) * pow(HN, a);
 
-    // Cook-Torrance specular BRDF: (F * G * D) / (4 * (N�L) * (N�V))
+    // Cook-Torrance specular BRDF: (F * G * D) / (4 * (N·L) * (N·V))
     vec3 specularBRDF = (F * G * D) / 4.0;
     
     // Lambertian diffuse BRDF (energy conserving)
@@ -80,13 +80,13 @@ vec3 ComputeBRDF(vec3 N, vec3 V, vec3 L, vec3 Ks, vec3 Kd, vec3 Ia, vec3 Il, flo
  * suitable for environment/skybox sampling. Uses spherical coordinate conversion.
  *
  * @param direction   - 3D direction vector (does not need to be normalized)
- * @param skyTexture  - Equirectangular environment map sampler
+ * @param hdrSkybox   - Equirectangular environment map sampler
  * @return            - Sampled skybox color (RGB)
  */
-vec3 SampleSkybox(vec3 reference, sampler2D skyTexture)
+vec3 SampleSkybox(vec3 reference, sampler2D hdrSkybox)
 {
     vec2 uv = vec2(-atan(reference.y, reference.x) * INV_2PI, acos(reference.z) * INV_PI);
-    return texture(skyTexture, uv).rgb;
+    return texture(hdrSkybox, uv).rgb;
 }
 
 /**
@@ -222,4 +222,86 @@ bool TestShadowOcclusion(vec4 shadowCoord, sampler2D shadowMap)
         return true;   // Fragment is occluded (in shadow)
     
     return false;      // Fragment is visible (lit)
+}
+
+/**
+ * ComputeIBLDiffuse - Calculates diffuse lighting from irradiance map
+ * 
+ * @param N              - Surface normal (normalized)
+ * @param Kd             - Diffuse albedo color
+ * @param irradianceMap  - Precomputed irradiance map sampler
+ * @return               - Diffuse contribution from environment
+ */
+vec3 ComputeIBLDiffuse(vec3 N, vec3 Kd, sampler2D irradianceMap)
+{
+    // Sample irradiance map using surface normal
+    vec3 irradiance = SampleSkybox(N, irradianceMap);
+    
+    // Apply diffuse BRDF: Kd/π * irradiance
+    return (Kd * INV_PI) * irradiance;
+}
+
+/**
+ * ComputeIBLSpecular - Calculates specular reflection from environment
+ * 
+ * @param N           - Surface normal (normalized)
+ * @param V           - View direction (normalized)
+ * @param R           - Reflection direction (normalized)
+ * @param Ks          - Specular reflectance at normal incidence
+ * @param a           - Specular exponent (shininess)
+ * @param hdrSkybox   - HDR environment map sampler
+ * @return            - Specular contribution from environment
+ */
+vec3 ComputeIBLSpecular(vec3 N, vec3 V, vec3 R, vec3 Ks, float a, sampler2D hdrSkybox)
+{
+    // Sample environment map in reflection direction
+    vec3 Li = SampleSkybox(R, hdrSkybox);
+    
+    // Half vector for BRDF calculation
+    vec3 H = normalize(R + V);
+    
+    // Compute dot products
+    float RN = max(dot(R, N), 0.0);
+    float VN = max(dot(V, N), 0.0);
+    float RH = max(dot(R, H), 0.0);
+    float HN = max(dot(H, N), 0.0);
+    
+    // Fresnel term (Schlick's approximation)
+    vec3 F = Ks + (1.0 - Ks) * pow(1.0 - RH, 5.0);
+    
+    // Geometry term
+    float G = 1.0 / pow(RH, 2.0);
+    
+    // Distribution term (Blinn-Phong)
+    float D = ((a + 2.0) / (2.0 * PI)) * pow(HN, a);
+    
+    // Cook-Torrance specular BRDF
+    vec3 specularBRDF = (F * G * D) / (4.0 * RN * VN);
+    
+    // Final specular: Li * (N·R) * BRDF
+    return Li * RN * specularBRDF;
+}
+
+/**
+ * ApplyToneMapping - Converts HDR color to displayable LDR with exposure
+ * 
+ * Applies Reinhard tone mapping, exposure control, and gamma correction
+ * to convert from linear HDR color space to sRGB display space.
+ *
+ * @param color    - Input HDR color (linear space, range [0,∞])
+ * @param exposure - Exposure adjustment factor (like camera aperture)
+ * @return         - Output LDR color (sRGB space, range [0,1])
+ */
+vec3 ApplyToneMapping(vec3 color, float exposure)
+{
+    // Apply exposure control
+    vec3 exposed = exposure * color;
+    
+    // Reinhard tone mapping: maps [0,∞] to [0,1]
+    vec3 toneMapped = exposed / (exposed + vec3(1.0));
+    
+    // Gamma correction: linear to sRGB (gamma 2.2)
+    vec3 gammaCorrected = pow(toneMapped, vec3(1.0 / 2.2));
+    
+    return gammaCorrected;
 }
