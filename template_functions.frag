@@ -235,9 +235,11 @@ bool TestShadowOcclusion(vec4 shadowCoord, sampler2D shadowMap)
 vec3 ComputeIBLDiffuse(vec3 N, vec3 Kd, sampler2D irradianceMap)
 {
     // Sample irradiance map using surface normal
-    vec3 irradiance = SampleSkybox(N, irradianceMap);
+    // The irradiance map contains the precomputed integral: ∫ Li(ωi) * (N·ωi)+ dωi
+    vec3 irradiance = SampleIrradianceMap(-N, irradianceMap);
     
-    // Apply diffuse BRDF: Kd/π * irradiance
+    // Apply diffuse BRDF coefficient: Kd/π
+    // This gives us the complete diffuse term: (Kd/π) * irradiance(N)
     return (Kd * INV_PI) * irradiance;
 }
 
@@ -246,61 +248,68 @@ vec3 ComputeIBLDiffuse(vec3 N, vec3 Kd, sampler2D irradianceMap)
  * 
  * @param N           - Surface normal (normalized)
  * @param V           - View direction (normalized)
- * @param R           - Reflection direction (normalized)
- * @param Ks          - Specular reflectance at normal incidence
+ * @param R           - Reflection direction (normalized): R = 2(V·N)N - V
+ * @param Ks          - Specular reflectance at normal incidence (F0)
  * @param a           - Specular exponent (shininess)
  * @param hdrSkybox   - HDR environment map sampler
  * @return            - Specular contribution from environment
  */
 vec3 ComputeIBLSpecular(vec3 N, vec3 V, vec3 R, vec3 Ks, float a, sampler2D hdrSkybox)
 {
-    // Sample environment map in reflection direction
-    vec3 Li = SampleSkybox(R, hdrSkybox);
-    
-    // Half vector for BRDF calculation
+    // Sample environment map in reflection direction - this is Li(R)
+    vec3 Li = SampleSkybox(-R, hdrSkybox);
+    // Compute the halfway vector between R (acting as light direction) and V
+
     vec3 H = normalize(R + V);
     
-    // Compute dot products
-    float RN = max(dot(R, N), 0.0);
-    float VN = max(dot(V, N), 0.0);
-    float RH = max(dot(R, H), 0.0);
-    float HN = max(dot(H, N), 0.0);
+    // Compute required dot products
+    float NR = max(dot(N, R), 0.0);  // Note: Using N·R as per handout
+    float NV = max(dot(N, V), 0.0);
+    float RH = max(dot(R, H), 0.0);  // For Fresnel (F) and Geometry (G)
+    float NH = max(dot(N, H), 0.0);  // For Distribution (D)
     
-    // Fresnel term (Schlick's approximation)
+    // Prevent division by zero
+    if (NR < 0.0001 || NV < 0.0001) {
+        return vec3(0.0);
+    }
+    
+    // Fresnel term - Schlick's approximation: F(R,H)
+    // Uses the angle between R and H (not V and H)
     vec3 F = Ks + (1.0 - Ks) * pow(1.0 - RH, 5.0);
     
-    // Geometry term
+    // Geometry term - Simplified: G(R,V,H)
     float G = 1.0 / pow(RH, 2.0);
     
-    // Distribution term (Blinn-Phong)
-    float D = ((a + 2.0) / (2.0 * PI)) * pow(HN, a);
+    // Distribution term - Normalized Blinn-Phong: D(H)
+    float D = ((a + 2.0) / (2.0 * PI)) * pow(NH, a);
     
-    // Cook-Torrance specular BRDF
-    vec3 specularBRDF = (F * G * D) / (4.0 * RN * VN);
+    // Complete specular BRDF: [D * G * F] / [4 * (R·N) * (V·N)]
+    vec3 specularBRDF = (D * G * F) / 4.0;
     
-    // Final specular: Li * (N·R) * BRDF
-    return Li * RN * specularBRDF;
+    // Final specular per handout: Li(R) * (N·R)+ * BRDF
+    // The (N·R)+ term accounts for the cosine factor in the rendering equation
+    return Li * NR * specularBRDF;
+    
 }
 
 /**
  * ApplyToneMapping - Converts HDR color to displayable LDR with exposure
- * 
- * Applies Reinhard tone mapping, exposure control, and gamma correction
- * to convert from linear HDR color space to sRGB display space.
  *
  * @param color    - Input HDR color (linear space, range [0,∞])
- * @param exposure - Exposure adjustment factor (like camera aperture)
+ * @param exposure - Exposure adjustment factor (e in the formula)
  * @return         - Output LDR color (sRGB space, range [0,1])
  */
 vec3 ApplyToneMapping(vec3 color, float exposure)
 {
-    // Apply exposure control
+    // Apply exposure control: e * C_in
     vec3 exposed = exposure * color;
     
-    // Reinhard tone mapping: maps [0,∞] to [0,1]
+    // Reinhard tone mapping: x / (x + 1)
+    // Maps [0,∞] to [0,1] range
     vec3 toneMapped = exposed / (exposed + vec3(1.0));
     
     // Gamma correction: linear to sRGB (gamma 2.2)
+    // Raises to power of 1/2.2 to counteract display's implicit 2.2 gamma
     vec3 gammaCorrected = pow(toneMapped, vec3(1.0 / 2.2));
     
     return gammaCorrected;

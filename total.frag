@@ -1,9 +1,8 @@
 /////////////////////////////////////////////////////////////////////////
-// Fragment Shader - Lighting Pass with Dual Paraboloid Reflections
+// Fragment Shader - Lighting Pass with IBL and Dual Paraboloid Reflections
 //
-// Implements physically-based lighting with dual paraboloid environment
-// mapping for reflections. This technique provides efficient real-time
-// reflections using only two hemisphere maps instead of a full cubemap.
+// Implements Image-Based Lighting using HDR skybox and irradiance maps,
+// combined with dual paraboloid environment mapping for reflections.
 //
 ////////////////////////////////////////////////////////////////////////
 #version 330
@@ -34,6 +33,8 @@ uniform int objectId;
 uniform vec3 diffuse, specular, light, ambient;
 uniform float shininess;
 uniform bool isReflective;
+uniform float exposure;
+uniform float skyboxReflectionStrength;
 
 // Texture mapping flags
 uniform bool useTex;
@@ -43,6 +44,7 @@ uniform bool useNormal;
 uniform sampler2D tex;
 uniform sampler2D normalMap;
 uniform sampler2D hdrSkybox;
+uniform sampler2D irradianceMap;
 uniform sampler2D shadowMap;
 uniform sampler2D upperReflectionTexture, lowerReflectionTexture;
 
@@ -96,10 +98,6 @@ void main()
     vec3 V = normalize(eyeVec);
     vec3 L = normalize(lightVec);
 
-    // Initialize lighting parameters from uniforms
-    vec3 Ia = ambient;
-    vec3 Il = light;
-    
     // Initialize material properties from uniforms
     vec3 Kd = diffuse;   
     vec3 Ks = specular;
@@ -110,7 +108,8 @@ void main()
     // Early exit: Skybox rendering (no lighting calculations needed)
     if(objectId == skyId)
     {
-        FragColor.xyz = SampleSkybox(V, hdrSkybox);
+        vec3 skyColor = SampleSkybox(V, hdrSkybox);
+        FragColor.xyz = ApplyToneMapping(skyColor, exposure);
         return;
     }
 
@@ -145,35 +144,45 @@ void main()
     {
         vec3 R = reflect(V, N);
         vec3 reflection = SampleSkybox(R, hdrSkybox);
-        FragColor.xyz = reflection;
+        
+        // Apply tone mapping to sea reflection
+        FragColor.xyz = ApplyToneMapping(reflection, exposure);
         return;
     }     
 
-    // Compute shadow factor: 0.0 if in shadow, 1.0 if fully lit
-    float shadowFactor = TestShadowOcclusion(shadowCoord, shadowMap) ? 0.0 : 1.0;
-
-    // Compute physically-based lighting using Cook-Torrance BRDF
-    vec3 lightColor = ComputeBRDF(N, V, L, Ks, Kd, Ia, Il, a, shadowFactor);
+    // ========================================================================
+    // IBL LIGHTING CALCULATION
+    // ========================================================================
     
-    // Early exit: Non-reflective objects only need direct lighting
-    if(!isReflective)
-    {
-        FragColor.xyz = lightColor;
-        return;
-    }
-    
-    // Reflective objects: blend lighting with environment reflections
-    // Boost specular by 5x to enhance reflective appearance
-    Ks *= 5.0;
-    
-    // Compute reflection vector (pointing from surface into environment)
+    // Compute reflection vector (for specular IBL)
     vec3 R = reflect(-V, N);
     
-    // Sample dual paraboloid reflection maps
-    vec3 reflection = ReflectionCalculation(R);
+    // IBL Diffuse: Sample irradiance map based on surface normal
+    vec3 iblDiffuse = ComputeIBLDiffuse(N, Kd, irradianceMap);
     
-    // Blend direct lighting with reflection based on specular reflectance
-    // Higher Ks values produce stronger reflections
-    vec3 finalColor = mix(lightColor, reflection, Ks);
-    FragColor.xyz = finalColor;
+    // IBL Specular: Sample environment map in reflection direction
+    vec3 iblSpecular = ComputeIBLSpecular(N, V, R, Ks, a, hdrSkybox);
+    
+    // Combine diffuse and specular IBL contributions
+    vec3 iblColor = iblDiffuse + iblSpecular;
+    
+    // ========================================================================
+    // REFLECTIVE OBJECTS: Blend with dual paraboloid reflections
+    // ========================================================================
+    
+    if(isReflective)
+    {
+        // Sample dual paraboloid reflection maps
+        vec3 reflection = ReflectionCalculation(R);
+        
+        // Blend IBL lighting with reflection based on skybox reflection strength
+        iblColor = mix(iblColor, reflection, skyboxReflectionStrength);
+    }
+    
+    // ========================================================================
+    // TONE MAPPING AND OUTPUT
+    // ========================================================================
+    
+    // Apply tone mapping, exposure control, and gamma correction
+    FragColor.xyz = ApplyToneMapping(iblColor, 1.0);
 }
